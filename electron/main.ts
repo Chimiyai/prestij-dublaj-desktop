@@ -1,6 +1,6 @@
 // electron/main.ts
 import Store from 'electron-store';
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -41,6 +41,13 @@ app.whenReady().then(() => {
     store.delete(key);
   });
   // --- BİTİŞ ---
+
+  ipcMain.handle('open-external-url', (event, url) => {
+    // Güvenlik için sadece http veya https ile başlayan linkleri aç
+    if (url && (url.startsWith('http:') || url.startsWith('https:'))) {
+      shell.openExternal(url);
+    }
+  });
 
   createWindow();
 

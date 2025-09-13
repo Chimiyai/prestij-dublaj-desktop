@@ -2,7 +2,21 @@
 
 /// <reference types="vite/client" />
 
+
+export interface IElectronShell {
+  openExternal: (url: string) => Promise<void>;
+}
+
 // --- BU BÖLÜMÜ EKLEYİN ---
+
+interface ImportMetaEnv {
+  readonly VITE_CLOUDINARY_CLOUD_NAME: string;
+  // Gelecekte başka değişkenler eklersen buraya yazabilirsin
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
 
 // Electron ve React arasında köprü kuracak olan API'mızın arayüzünü (interface) tanımlıyoruz.
 export interface IpcRenderer {
@@ -13,6 +27,7 @@ export interface IpcRenderer {
 declare global {
   interface Window {
     ipcRenderer: IpcRenderer;
+    electronShell: IElectronShell;
   }
 }
 
