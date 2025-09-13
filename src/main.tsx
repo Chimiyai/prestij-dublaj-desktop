@@ -1,11 +1,14 @@
 // src/main.tsx
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './index.css' // <-- Bu satırın burada olduğundan emin olun
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.tsx';
+import './index.css';
+import { AuthProvider } from './context/AuthProvider.tsx';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+    <AuthProvider> {/* <-- Başına ekle */}
+      <App />
+    </AuthProvider> {/* <-- Sonuna ekle */}
+  </React.StrictMode>
+);
