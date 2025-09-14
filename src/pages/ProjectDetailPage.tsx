@@ -112,14 +112,18 @@ export default function ProjectDetailPage() {
 
             {/* Aksiyon ve Etkileşim Butonları (Grup Halinde) */}
             <div className="mt-8 flex items-center gap-4">
-              {/* GÖREV 4: DÜZELTİLMİŞ AKSİYON BUTONU */}
               <ProjectActionButton 
                 project={projectDetails} 
                 userHasGame={userStatus.userHasGame} 
               />
               <ProjectInteractionButtons 
                 projectId={projectDetails.id} 
-                initialData={userStatus.userInitialInteraction} 
+                initialInteraction={userStatus.userInitialInteraction} // Eskiden 'initialData' idi, adı değişti
+                initialCounts={{ // YENİ PROP
+                  likes: projectDetails.likeCount,
+                  dislikes: projectDetails.dislikeCount,
+                  favorites: projectDetails.favoriteCount,
+                }}
               />
             </div>
           </div>
