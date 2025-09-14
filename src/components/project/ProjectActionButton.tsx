@@ -45,13 +45,28 @@ export default function ProjectActionButton({ project, userHasGame }: ProjectAct
       toast.error('Bu proje için bir indirme linki bulunamadı.');
       return;
     }
+
+    // YENİ: Kurulumdan önce kayıtlı yolu kontrol et
+    const installPath = await window.electronStore.get(`installPath_${project.slug}`);
+    
+    // --- SORUNUN KAYNAĞI BURASI ---
+    if (typeof installPath !== 'string' || installPath.trim() === '') {
+      toast.error('Lütfen önce sağ üstteki ayarlar menüsünden oyunun kurulum yolunu belirtin.');
+      return; // <-- FONKSİYON BURADA DURUYOR!
+    }
+    // --- BİTİŞ ---
+
     setStatus({ status: 'downloading', message: 'Başlatılıyor...' });
     toast.loading('Kurulum başlıyor...');
+    
+    // Kod bu satıra hiç ulaşamıyor
     await window.modInstaller.install({
       downloadUrl,
       projectTitle: project.title,
+      installPath: installPath,
     });
   };
+
 
   const handlePurchase = () => {
     toast.error('Masaüstü uygulamasından satın alma henüz aktif değil. Lütfen web sitemizi ziyaret edin.');

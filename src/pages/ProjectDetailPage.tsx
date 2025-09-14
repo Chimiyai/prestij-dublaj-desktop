@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 // YENİ: SVG ikonu için import
-import { ArrowLeft, Image as ImageIcon } from 'lucide-react'; 
 import type { ProjectDataForDetail, UserInteractionData } from '../types';
 import { getCloudinaryImageUrl } from '../lib/cloudinary';
 import { format } from 'date-fns';
@@ -11,6 +10,8 @@ import { tr } from 'date-fns/locale';
 import ProjectActionButton from '../components/project/ProjectActionButton';
 import ProjectInteractionButtons from '../components/project/ProjectInteractionButtons';
 import ProjectTabs from '../components/project/ProjectTabs';
+import { ArrowLeft, Image as ImageIcon, Settings } from 'lucide-react'; // Settings ikonunu ekle
+import SettingsModal from '../components/project/SettingsModal'; // Yeni modalı import et
 
 interface ProjectDetailResponse {
   projectDetails: ProjectDataForDetail;
@@ -27,6 +28,7 @@ export default function ProjectDetailPage() {
   const [data, setData] = useState<ProjectDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -68,6 +70,13 @@ export default function ProjectDetailPage() {
         className="fixed top-6 left-[calc(16rem+2rem)] z-50 flex items-center space-x-2 text-white bg-black/50 p-2 rounded-full hover:bg-black/80 transition-colors"
       >
         <ArrowLeft size={20} />
+      </button>
+      {/* YENİ: Ayarlar Butonu */}
+      <button 
+        onClick={() => setIsSettingsOpen(true)}
+        className="fixed top-6 right-8 z-50 flex items-center space-x-2 text-white bg-black/50 p-2 rounded-full hover:bg-black/80 transition-colors"
+      >
+        <Settings size={20} />
       </button>
 
       {/* 1. SECTION: Banner Alanı */}
@@ -138,6 +147,11 @@ export default function ProjectDetailPage() {
         <ProjectTabs project={projectDetails} />
       </section>
       </section>
+    <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        projectSlug={projectDetails.slug}
+      />
     </div>
   );
 }

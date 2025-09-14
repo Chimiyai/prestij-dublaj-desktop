@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 });
 
 contextBridge.exposeInMainWorld('modInstaller', {
-  install: (args: { downloadUrl: string; projectTitle: string }) => 
+  install: (args: { downloadUrl: string; projectTitle: string; installPath: string }) => 
     ipcRenderer.invoke('install-mod', args),
+  // YENİ: Klasör seçme fonksiyonunu ekle
+  selectDirectory: () => ipcRenderer.invoke('select-directory'),
 });
