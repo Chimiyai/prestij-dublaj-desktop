@@ -74,3 +74,24 @@ export interface UserInteractionData {
     disliked: boolean;
     favorited: boolean;
 }
+
+export interface CommentUser {
+  id: number;
+  username: string;
+  profileImagePublicId: string | null;
+  role: string;
+}
+
+export interface Comment {
+  id: number;
+  content: string;
+  createdAt: string; // Tarih string olarak gelecek
+  user: CommentUser;
+}
+
+export interface FetchCommentsResponse {
+  comments: Comment[];
+  totalPages: number;
+  currentPage: number;
+  totalComments: number;
+}

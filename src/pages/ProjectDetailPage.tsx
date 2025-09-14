@@ -2,16 +2,16 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
-import { ArrowLeft } from 'lucide-react';
+// YENİ: SVG ikonu için import
+import { ArrowLeft, Image as ImageIcon } from 'lucide-react'; 
 import type { ProjectDataForDetail, UserInteractionData } from '../types';
-import { getCloudinaryImageUrl } from '../lib/cloudinary'; // Yeni yardımcıyı import et
+import { getCloudinaryImageUrl } from '../lib/cloudinary';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import ProjectActionButton from '../components/project/ProjectActionButton';
 import ProjectInteractionButtons from '../components/project/ProjectInteractionButtons';
 import ProjectTabs from '../components/project/ProjectTabs';
 
-// API'dan dönen verinin tam yapısı
 interface ProjectDetailResponse {
   projectDetails: ProjectDataForDetail;
   userStatus: {
@@ -71,22 +71,35 @@ export default function ProjectDetailPage() {
       </button>
 
       {/* 1. SECTION: Banner Alanı */}
-      <section className="relative w-full h-[50vh] min-h-[350px] bg-prestij-bg-dark-1">
-        <img src={bannerUrl} alt={`${projectDetails.title} Banner`} className="w-full h-full object-cover opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-prestij-bg-dark-3 via-prestij-bg-dark-3/70 to-transparent" />
+      <section className="relative w-full h-[60vh] min-h-[400px] bg-prestij-bg-dark-1">
+        {/* HATA 3 ÇÖZÜMÜ: bannerUrl null ise ne yapılacağını belirt */}
+        {bannerUrl ? (
+          <img src={bannerUrl} alt={`${projectDetails.title} Banner`} className="w-full h-full object-cover opacity-30" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-prestij-bg-dark-2">
+            <ImageIcon className="w-24 h-24 text-gray-600" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-prestij-bg-dark-3 via-prestij-bg-dark-3/80 to-transparent" />
       </section>
       
       {/* 2. SECTION: Bilgi Bloğu */}
       <section className="relative z-10 -mt-48 container mx-auto px-8">
-        <div className="flex flex-col md:flex-row items-start gap-8">
+        <div className="flex flex-col md:flex-row items-center md:items-end gap-8">
           
-          {/* Sol Taraf: Kapak Resmi */}
-          <div className="flex-shrink-0 w-48 lg:w-64 -mt-12">
-            <img src={coverUrl} alt={`${projectDetails.title} Kapak`} className="w-full h-auto rounded-lg shadow-2xl border-4 border-prestij-bg-dark-2" />
+          <div className="flex-shrink-0 w-48 lg:w-64">
+            {/* HATA 4 ÇÖZÜMÜ: coverUrl null ise ne yapılacağını belirt */}
+            <div className="w-full h-auto rounded-lg shadow-2xl border-4 border-prestij-bg-dark-2 bg-prestij-bg-dark-1 aspect-[3/4] flex items-center justify-center">
+              {coverUrl ? (
+                <img src={coverUrl} alt={`${projectDetails.title} Kapak`} className="w-full h-full object-cover rounded-md" />
+              ) : (
+                <ImageIcon className="w-16 h-16 text-gray-600" />
+              )}
+            </div>
           </div>
 
           {/* Sağ Taraf: Başlık, Butonlar ve Detaylar */}
-          <div className="flex-grow pt-4">
+          <div className="flex-grow flex flex-col items-center md:items-start text-center md:text-left">
             <h1 className="text-4xl lg:text-6xl font-bold text-white [text-shadow:_2px_3px_5px_rgb(0_0_0_/_0.7)]">
               {projectDetails.title}
             </h1>
@@ -97,19 +110,13 @@ export default function ProjectDetailPage() {
               <span>{projectDetails.releaseDate ? format(new Date(projectDetails.releaseDate), 'dd MMMM yyyy', {locale: tr}) : 'Tarih Belirsiz'}</span>
             </div>
 
-            <p className="mt-6 text-prestij-text-secondary line-clamp-3 leading-relaxed max-w-3xl">
-              {projectDetails.description}
-            </p>
-
-            {/* Aksiyon ve Etkileşim Butonları */}
+            {/* Aksiyon ve Etkileşim Butonları (Grup Halinde) */}
             <div className="mt-8 flex items-center gap-4">
-              {/* TODO 1 TAMAMLANDI */}
+              {/* GÖREV 4: DÜZELTİLMİŞ AKSİYON BUTONU */}
               <ProjectActionButton 
                 project={projectDetails} 
                 userHasGame={userStatus.userHasGame} 
               />
-              
-              {/* TODO 2 TAMAMLANDI */}
               <ProjectInteractionButtons 
                 projectId={projectDetails.id} 
                 initialData={userStatus.userInitialInteraction} 
@@ -119,9 +126,13 @@ export default function ProjectDetailPage() {
         </div>
       </section>
 
+      {/* GÖREV 5: Açıklama ve Sekmeler (Ayrılmış Yapı) */}
       <section className="container mx-auto px-8 py-12">
-        {/* TODO 3 TAMAMLANDI */}
+
+        {/* Sekmeler (Artık Sadece Ekip ve Yorumlar İçin) */}
+        <section className="container mx-auto px-8 py-12">
         <ProjectTabs project={projectDetails} />
+      </section>
       </section>
     </div>
   );
