@@ -11,6 +11,7 @@ export interface IElectronShell {
 
 interface ImportMetaEnv {
   readonly VITE_CLOUDINARY_CLOUD_NAME: string;
+  readonly VITE_GOOGLE_DRIVE_API_KEY: string;
 }
 
 interface ImportMeta {
@@ -38,6 +39,7 @@ export interface IElectronStore {
 export interface IModInstaller {
   install: (args: { downloadUrl: string; projectTitle: string; installPath: string }) => Promise<{ success: boolean; error?: string }>;
   selectDirectory: () => Promise<string | null>;
+  launchGame: (path: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 declare global {

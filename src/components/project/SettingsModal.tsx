@@ -39,6 +39,14 @@ export default function SettingsModal({ isOpen, onClose, projectSlug }: Props) {
     onClose();
   };
 
+  const handleResetInstallation = () => {
+    if (confirm("Bu projenin kurulum durumunu sıfırlamak istediğinizden emin misiniz? Bu işlem dosyaları silmez, sadece uygulamanın modu 'kurulmamış' olarak görmesini sağlar.")) {
+      window.electronStore.delete(`installStatus_${projectSlug}`);
+      toast.success('Kurulum durumu sıfırlandı. Artık modu yeniden kurabilirsiniz.');
+      onClose(); // Pencereyi kapat ki değişiklik ana sayfaya yansısın.
+    }
+  };
+
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -58,7 +66,7 @@ export default function SettingsModal({ isOpen, onClose, projectSlug }: Props) {
                   <input
                     type="text"
                     readOnly
-                    value={isLoading ? 'Yükleniyor...' : installPath || 'Klasör seçilmedi'}
+                    value={isLoading ? 'Yükleniyor...' : installPath || 'Oyunun .exe dosyası seçilmedi'}
                     className="flex-grow bg-prestij-bg-dark-2 border border-prestij-border-secondary rounded-md px-3 py-2 text-prestij-text-primary placeholder-prestij-text-placeholder"
                   />
                   <button onClick={handleSelectFolder} className="p-2 bg-prestij-bg-button rounded-md hover:bg-prestij-purple/80">
@@ -66,6 +74,15 @@ export default function SettingsModal({ isOpen, onClose, projectSlug }: Props) {
                   </button>
                 </div>
               </div>
+              <div className="mt-4 pt-4 border-t border-prestij-border-secondary">
+          <h4 className="text-sm font-medium text-prestij-text-secondary mb-2">Gelişmiş</h4>
+          <button onClick={handleResetInstallation} className="w-full text-left text-sm text-red-400/80 hover:bg-red-500/20 hover:text-red-400 p-2 rounded-md transition-colors">
+            Kurulumu Sıfırla
+          </button>
+          <p className="text-xs text-gray-500 mt-1 px-2">
+            Eğer mod düzgün çalışmıyorsa veya yeniden kurmak istiyorsanız bu seçeneği kullanın.
+          </p>
+        </div>
               <div className="mt-6">
                 <button onClick={handleSaveChanges} className="w-full py-2 bg-prestij-purple rounded-lg font-bold hover:bg-prestij-purple-darker">
                   Değişiklikleri Kaydet

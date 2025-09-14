@@ -1,19 +1,74 @@
 // src/components/Sidebar.tsx
-import { Fragment } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Compass, Library, User, LogOut, ExternalLink } from 'lucide-react';
+import { Compass, Library, User, LogOut, ExternalLink, Play } from 'lucide-react'; // Play ikonunu ekle
 import { useAuth } from '../hooks/useAuth';
-import { Menu, Transition } from '@headlessui/react'; // Headless UI importları
+import { Menu, Transition } from '@headlessui/react';
+import { getCloudinaryImageUrl } from '../lib/cloudinary'; // Resimler için yardımcıyı import et
+import toast from 'react-hot-toast';
+import { updateQuickLaunchList } from '../lib/quickLaunch';
 
-// Aktif link stili için bir yardımcı değişken
-const activeLinkStyle = {
-  backgroundColor: '#8B4EFF', // prestij-purple
-  color: 'white',
-};
+// Hızlı Başlatma öğesinin tipini tanımlayalım
+export interface QuickLaunchItem {
+  slug: string;
+  title: string;
+  coverImagePublicId: string | null;
+  installPath: string;
+}
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [quickLaunchItems, setQuickLaunchItems] = useState<QuickLaunchItem[]>([]);
+
+  // Bileşen yüklendiğinde Hızlı Başlatma listesini çek
+  useEffect(() => {
+    window.electronStore.get('quickLaunchList').then(items => {
+      if (items && Array.isArray(items)) {
+        setQuickLaunchItems(items);
+      }
+    });
+  }, []); // Bu sadece başlangıçta çalışır.
+  
+  const fetchQuickLaunchItems = async () => {
+    const items = await window.electronStore.get('quickLaunchList');
+    if (items && Array.isArray(items)) {
+      setQuickLaunchItems(items);
+    }
+  };
+
+  useEffect(() => {
+    fetchQuickLaunchItems(); // Başlangıçta listeyi çek
+
+    // Hızlı Başlat listesi güncellendiğinde tetiklenecek bir dinleyici ekle
+    const handleUpdate = () => fetchQuickLaunchItems();
+    window.addEventListener('quickLaunchUpdated', handleUpdate);
+
+    // Bileşen kaldırıldığında dinleyiciyi temizle
+    return () => {
+      window.removeEventListener('quickLaunchUpdated', handleUpdate);
+    };
+  }, []);
+
+  const handleLaunchGame = (item: QuickLaunchItem) => {
+    if (item.installPath) {
+      toast.loading(`${item.title} başlatılıyor...`);
+      window.modInstaller.launchGame(item.installPath).then(result => {
+        toast.dismiss();
+        if (!result.success) {
+          toast.error(`Oyun başlatılamadı: ${result.error}`);
+        }
+      });
+      updateQuickLaunchList(item);
+    } else {
+      toast.error("Oyun yolu bulunamadı.");
+    }
+  };
+
+  const activeLinkStyle = {
+  backgroundColor: '#8B4EFF',
+  color: 'white',
+};
 
   const handleProfileClick = () => {
     const profileUrl = `http://localhost:3000/profil/${user?.username}`;
@@ -52,9 +107,40 @@ export default function Sidebar() {
           </NavLink>
         </nav>
       </div>
+
+      {/* --- YENİ BÖLÜM: Hızlı Başlatma --- */}
+      {quickLaunchItems.length > 0 && (
+        <div className="mt-8">
+          <h3 className="px-4 mb-2 text-xs font-semibold text-prestij-text-muted uppercase tracking-wider">
+            Hızlı Başlat
+          </h3>
+          <div className="space-y-1">
+            {quickLaunchItems.map(item => (
+              <button 
+                key={item.slug} 
+                onClick={() => handleLaunchGame(item)}
+                className="w-full flex items-center gap-3 p-2 rounded-lg text-prestij-text-secondary hover:bg-prestij-bg-button transition-colors group"
+                title={`Başlat: ${item.title}`}
+              >
+                <div className="w-8 h-10 flex-shrink-0 rounded-md bg-prestij-bg-dark-1 flex items-center justify-center">
+                  {getCloudinaryImageUrl(item.coverImagePublicId) ? (
+                     <img 
+                        src={getCloudinaryImageUrl(item.coverImagePublicId) || undefined} 
+                        alt={item.title}
+                        className="w-full h-full object-cover rounded-md"
+                      />
+                  ) : <Play size={16} className="text-gray-600"/> }
+                </div>
+                <span className="text-sm font-medium text-left truncate">{item.title}</span>
+                <Play size={16} className="ml-auto text-transparent group-hover:text-white transition-colors" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* 3. Profil Menüsü (En Altta) */}
-      <div className="flex-shrink-0">
+      <div className="mt-auto pt-4">
         <div className="border-t border-prestij-border-secondary mb-2"></div>
         <Menu as="div" className="relative">
           <Menu.Button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-prestij-text-secondary hover:bg-prestij-bg-button transition-colors">

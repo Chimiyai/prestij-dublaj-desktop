@@ -2,8 +2,9 @@
 import { useState, useEffect } from 'react';
 import type { IpcRendererEvent } from 'electron';
 import type { ProjectDataForDetail } from '../../types';
-import { Download, ShoppingCart, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Download, ShoppingCart, CheckCircle, AlertTriangle, Play } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { updateQuickLaunchList } from '../../lib/quickLaunch';
 
 interface ProjectActionButtonProps {
   project: ProjectDataForDetail;
@@ -18,26 +19,54 @@ type InstallationStatus = {
 
 export default function ProjectActionButton({ project, userHasGame }: ProjectActionButtonProps) {
   const [status, setStatus] = useState<InstallationStatus>({ status: 'idle' });
+  const [isInstalled, setIsInstalled] = useState(false); // YENİ: Kalıcı kurulum durumu
+
+  // Bileşen yüklendiğinde ve proje değiştiğinde kurulum durumunu kontrol et
+  useEffect(() => {
+    window.electronStore.get(`installStatus_${project.slug}`).then(installedStatus => {
+      setIsInstalled(installedStatus === 'installed');
+    });
+  }, [project.slug]);
 
   useEffect(() => {
-    // HATA 1 ÇÖZÜMÜ: Gelen argümanı güvenli bir şekilde cast ediyoruz.
     const listener = (_event: IpcRendererEvent, ...args: unknown[]) => {
-      const newStatus = args[0] as InstallationStatus; // Tip güvencesi
+      const newStatus = args[0] as InstallationStatus;
       setStatus(newStatus);
-      
-      if (newStatus.status === 'success' || newStatus.status === 'error') {
+      if (newStatus.status === 'success') {
+        window.electronStore.set(`installStatus_${project.slug}`, 'installed');
+        setIsInstalled(true);
+        
+        // --- BU BÖLÜMÜN TAMAMINI SİLİYORUZ ---
+        // const addToQuickLaunch = async () => { ... };
+        // addToQuickLaunch();
+        // --- BİTİŞ ---
+
         toast.dismiss();
-        if (newStatus.status === 'success') toast.success(newStatus.message || 'Başarılı!');
-        if (newStatus.status === 'error') toast.error(newStatus.message || 'Hata!');
+        toast.success(newStatus.message || 'Başılı!');
       }
     };
     
     window.ipcRenderer.on('installation-status', listener);
-
     return () => {
       window.ipcRenderer.removeListener('installation-status', listener as (...args: unknown[]) => void);
     };
-  }, []);
+  }, [project.slug]);
+
+  const handleLaunchGame = async () => {
+    const installPath = await window.electronStore.get(`installPath_${project.slug}`);
+    if (typeof installPath !== 'string' || !installPath) {
+      toast.error("Oyun yolu bulunamadı. Lütfen ayarlardan kontrol edin.");
+      return;
+    }
+    // main process'e oyunu başlatma komutu gönder
+    window.modInstaller.launchGame(installPath); 
+    updateQuickLaunchList({
+      slug: project.slug,
+      title: project.title,
+      coverImagePublicId: project.coverImagePublicId,
+      installPath: installPath,
+    });
+  };
 
   const handleInstallMod = async () => {
     const downloadUrl = project.externalWatchUrl;
@@ -67,6 +96,14 @@ export default function ProjectActionButton({ project, userHasGame }: ProjectAct
     });
   };
 
+  if (isInstalled) {
+    return (
+      <button onClick={handleLaunchGame} className="flex items-center gap-3 px-8 py-4 bg-teal-500 text-white font-bold rounded-lg hover:bg-teal-600 transition-all transform hover:scale-105">
+        <Play size={24} />
+        OYUNU BAŞLAT
+      </button>
+    );
+  }
 
   const handlePurchase = () => {
     toast.error('Masaüstü uygulamasından satın alma henüz aktif değil. Lütfen web sitemizi ziyaret edin.');

@@ -25,4 +25,5 @@ contextBridge.exposeInMainWorld('modInstaller', {
     ipcRenderer.invoke('install-mod', args),
   // YENİ: Klasör seçme fonksiyonunu ekle
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
+  launchGame: (path: string) => ipcRenderer.invoke('launch-game', path),
 });
