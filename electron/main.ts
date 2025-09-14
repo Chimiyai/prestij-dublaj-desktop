@@ -5,6 +5,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import Store from 'electron-store';
 import { fileURLToPath } from 'node:url';
+import { autoUpdater } from 'electron-updater';
 
 // --- Gerekli Kurulumlar ---
 const store = new Store();
@@ -33,6 +34,68 @@ function createWindow() {
 // --- Uygulama Hazır Olduğunda ---
 app.whenReady().then(() => {
   createWindow();
+
+
+  // Geliştirme ortamında otomatik güncellemeyi test etmeyi kolaylaştırır.
+  // Uygulamayı paketlediğinde bu satırları silebilir veya yoruma alabilirsin.
+  Object.defineProperty(app, 'isPackaged', {
+    get() {
+      return true;
+    }
+  });
+
+  // Arayüze mesaj göndermek için bir yardımcı fonksiyon
+  const sendStatusToWindow = (text: string, data?: unknown) => {
+    const win = BrowserWindow.getAllWindows()[0];
+    if (win) {
+      win.webContents.send('update-status', { text, data });
+    }
+  };
+
+  // Güncelleme kontrolü başladığında
+  autoUpdater.on('checking-for-update', () => {
+    sendStatusToWindow('Güncellemeler kontrol ediliyor...');
+  });
+
+  // Yeni bir güncelleme bulunduğunda
+  autoUpdater.on('update-available', (info) => {
+    sendStatusToWindow('Yeni bir güncelleme mevcut!', info);
+  });
+
+  // Herhangi bir güncelleme bulunamadığında
+  autoUpdater.on('update-not-available', (info) => {
+    sendStatusToWindow('Uygulama güncel.', info);
+    // Belirli bir süre sonra bu mesajı gizlemek için arayüze bir komut gönderebiliriz.
+    setTimeout(() => sendStatusToWindow('hide-status'), 3000);
+  });
+
+  // Güncelleme sırasında bir hata oluştuğunda
+  autoUpdater.on('error', (err) => {
+    sendStatusToWindow('Güncelleme hatası: ' + err.message);
+  });
+
+  // Güncelleme indirme ilerlemesi
+  autoUpdater.on('download-progress', (progressObj) => {
+    let log_message = `İndirme hızı: ${Math.round(progressObj.bytesPerSecond / 1024)} KB/s`;
+    log_message = log_message + ` - İndirilen ${Math.round(progressObj.percent)}%`;
+    log_message = log_message + ` (${Math.round(progressObj.transferred / 1024 / 1024)}MB / ${Math.round(progressObj.total / 1024 / 1024)}MB)`;
+    sendStatusToWindow(log_message, progressObj);
+  });
+
+  // Güncelleme indirilip kurulmaya hazır olduğunda
+  autoUpdater.on('update-downloaded', (info) => {
+    sendStatusToWindow('Güncelleme indirildi. Uygulama yeniden başlatılacak...', info);
+    
+    // Kullanıcıya sormadan direkt yeniden başlatıp kurmak için:
+    autoUpdater.quitAndInstall();
+
+    // VEYA kullanıcıya bir butonla onaylatmak istersen,
+    // arayüze özel bir mesaj gönderip ('update-ready' gibi),
+    // arayüzden gelen 'restart-and-install' komutunu dinleyebilirsin.
+  });
+
+  // Uygulama başladığında güncelleme kontrolünü tetikle
+  autoUpdater.checkForUpdatesAndNotify();
 
   // --- IPC İletişim Kanalları ---
 

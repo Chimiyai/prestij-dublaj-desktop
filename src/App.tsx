@@ -6,6 +6,7 @@ import MainLayout from './components/MainLayout';
 import LibraryPage from './pages/LibraryPage'; // Geri ekle
 import DiscoverPage from './pages/DiscoverPage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
+import UpdateNotification from './components/UpdateNotification';
 
 // Bu, giriş yapmış kullanıcıları koruyan bir sarmalayıcı bileşen
 function ProtectedRoutes() {
@@ -31,6 +32,7 @@ function App() {
           <Route path="/project/:slug" element={<ProjectDetailPage />} />
         </Route>
       </Routes>
+      <UpdateNotification />
     </HashRouter>
   );
 }
