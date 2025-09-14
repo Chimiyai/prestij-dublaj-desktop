@@ -1,4 +1,5 @@
 // src/components/ProjectCard.tsx
+import { Link } from 'react-router-dom';
 import type { Project } from '../types';
 
 interface ProjectCardProps {
@@ -26,17 +27,20 @@ export default function ProjectCard({ project }: ProjectCardProps) {
     : 'https://via.placeholder.com/300x400.png?text=Resim+Yok';
 
   return (
-    <div className="group relative overflow-hidden rounded-lg bg-prestij-bg-card-1 shadow-lg transition-all duration-300 ease-in-out hover:shadow-2xl hover:shadow-prestij-purple/20 hover:scale-105">
-      <img src={imageUrl} alt={project.title} className="w-full h-full object-cover aspect-[3/4]" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-      <div className="absolute bottom-0 left-0 p-4">
-        <h3 className="font-bold text-lg text-white group-hover:text-prestij-purple-light transition-colors">
-          {project.title}
-        </h3>
-        <p className="text-sm text-prestij-text-muted capitalize">
-          {project.type}
-        </p>
+    // Kartın tamamını tıklanabilir bir link haline getiriyoruz
+    <Link to={`/project/${project.slug}`} className="block group">
+      <div className="relative overflow-hidden rounded-lg bg-prestij-bg-card-1 shadow-lg transition-all duration-300 ease-in-out group-hover:shadow-2xl group-hover:shadow-prestij-purple/20 group-hover:scale-105">
+        <img src={imageUrl} alt={project.title} className="w-full h-full object-cover aspect-[3/4]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+        <div className="absolute bottom-0 left-0 p-4">
+          <h3 className="font-bold text-lg text-white group-hover:text-prestij-purple-light transition-colors">
+            {project.title}
+          </h3>
+          <p className="text-sm text-prestij-text-muted capitalize">
+            {project.type}
+          </p>
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }

@@ -15,28 +15,28 @@ export default function DiscoverPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   
   const [activeFilters, setActiveFilters] = useState<Filters>({
-    categories: [], // Artık string[] olarak doğru
-    price: 'all',
-  });
+        categories: [],
+        price: 'all',
+        libraryStatus: 'all', // Keşfet için varsayılan 'all'
+    });
 
-  const fetchProjects = useCallback(async (filters: Filters) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams();
-      
-      // API tek bir kategori slug'ı beklediği için, seçilenlerin ilkini gönderiyoruz.
-      if (filters.categories.length > 0) {
-        params.append('category', filters.categories[0]);
-      }
-      
-      if (filters.price !== 'all') {
-        params.append('price', filters.price);
-      }
-      
-      const response = await api.get(`/projects?${params.toString()}`);
-      setProjects(response.data);
-    } catch (err) {
+    const fetchProjects = useCallback(async (filters: Filters) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const params = new URLSearchParams();
+            if (filters.categories.length > 0) {
+                params.append('category', filters.categories[0]);
+            }
+            if (filters.price !== 'all') {
+                params.append('price', filters.price);
+            }
+            if (filters.libraryStatus !== 'all') {
+                params.append('libraryStatus', filters.libraryStatus);
+            }
+            const response = await api.get(`/projects?${params.toString()}`);
+            setProjects(response.data);
+        } catch (err) {
       console.error("Projeler çekilirken hata:", err);
       setError("Projeler yüklenirken bir sorun oluştu.");
     } finally {

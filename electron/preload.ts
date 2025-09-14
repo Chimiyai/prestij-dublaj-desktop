@@ -1,5 +1,5 @@
 // electron/preload.ts
-import { contextBridge, ipcRenderer } from 'electron'; // ipcRenderer'ın import edildiğinden emin ol
+import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 // electron-store için olan kod
 contextBridge.exposeInMainWorld('electronStore', {
@@ -11,10 +11,16 @@ contextBridge.exposeInMainWorld('electronStore', {
 // ipcRenderer için olan (eski) kod
 contextBridge.exposeInMainWorld('ipcRenderer', {
   send: (channel: string, data?: unknown) => ipcRenderer.send(channel, data),
+  // Tip olarak 'any' yerine daha spesifik tipler kullanalım
+  on: (channel: string, listener: (event: IpcRendererEvent, ...args: unknown[]) => void) => {
+    ipcRenderer.on(channel, listener);
+  },
+  removeListener: (channel: string, listener: (...args: unknown[]) => void) => {
+    ipcRenderer.removeListener(channel, listener);
+  },
 });
 
-// shell (harici link açma) için olan kod - DÜZELTİLMİŞ HALİ
-contextBridge.exposeInMainWorld('electronShell', {
-  // HATA BURADAYDI: ipcMain yerine ipcRenderer kullanılmalı.
-  openExternal: (url: string) => ipcRenderer.invoke('open-external-url', url),
+contextBridge.exposeInMainWorld('modInstaller', {
+  install: (args: { downloadUrl: string; projectTitle: string }) => 
+    ipcRenderer.invoke('install-mod', args),
 });

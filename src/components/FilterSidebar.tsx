@@ -3,11 +3,11 @@ import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import api from '../lib/api';
 
-// --- BU BÖLÜMÜ GÜNCELLİYORUZ ---
-// Bu dosyanın kullandığı ve dışarıya bildirdiği tek bir doğru tip tanımı yapıyoruz.
+// --- Filters tipini yeni "libraryStatus" ile güncelliyoruz ---
 export interface Filters {
-  categories: string[]; // Kategori slug'ları (string)
+  categories: string[];
   price: 'all' | 'paid' | 'free';
+  libraryStatus: 'all' | 'in' | 'not_in'; // Yeni filtre eklendi
 }
 
 interface Category {
@@ -19,12 +19,18 @@ interface Category {
 interface FilterSidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  currentFilters: Filters; // DiscoverPage'den bu tipte veri bekliyoruz
-  onApplyFilters: (filters: Filters) => void; // DiscoverPage'e bu tipte veri göndereceğiz
+  currentFilters: Filters;
+  onApplyFilters: (filters: Filters) => void;
+  hideLibraryStatusFilter?: boolean; // Yeni, opsiyonel prop
 }
-// --- BİTİŞ ---
 
-export default function FilterSidebar({ isOpen, onClose, currentFilters, onApplyFilters }: FilterSidebarProps) {
+export default function FilterSidebar({ 
+  isOpen, 
+  onClose, 
+  currentFilters, 
+  onApplyFilters, 
+  hideLibraryStatusFilter = false // Varsayılan değer false
+}: FilterSidebarProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [localFilters, setLocalFilters] = useState<Filters>(currentFilters);
@@ -37,7 +43,9 @@ export default function FilterSidebar({ isOpen, onClose, currentFilters, onApply
 
   useEffect(() => {
     const fetchCategories = async () => {
+      // Bu fonksiyon aynı kalabilir
       try {
+        setLoading(true);
         const response = await api.get('/categories');
         setCategories(response.data);
       } catch (error) {
@@ -62,6 +70,11 @@ export default function FilterSidebar({ isOpen, onClose, currentFilters, onApply
     setLocalFilters(prevFilters => ({ ...prevFilters, price }));
   };
   
+  // YENİ: Kütüphane durumu filtresi için handler
+  const handleLibraryStatusChange = (status: Filters['libraryStatus']) => {
+    setLocalFilters(prevFilters => ({ ...prevFilters, libraryStatus: status }));
+  };
+
   const handleApply = () => {
     onApplyFilters(localFilters);
   };
@@ -74,7 +87,7 @@ export default function FilterSidebar({ isOpen, onClose, currentFilters, onApply
       />
       
       <aside 
-        className={`fixed top-0 right-0 h-full w-80 bg-prestij-bg-dark-1 z-40 p-6 transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed top-0 right-0 h-full w-80 bg-prestij-bg-dark-1 z-40 p-6 transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'} overflow-y-auto`}
       >
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-bold">Filtrele</h2>
@@ -83,7 +96,8 @@ export default function FilterSidebar({ isOpen, onClose, currentFilters, onApply
           </button>
         </div>
         
-        <div className="space-y-6">
+        {/* Ana filtreleme alanı */}
+        <div className="space-y-6 pb-20">
           <div>
             <h3 className="text-lg font-semibold mb-3">Kategoriler</h3>
             <div className="space-y-2">
@@ -135,9 +149,49 @@ export default function FilterSidebar({ isOpen, onClose, currentFilters, onApply
               </div>
             </div>
           </div>
+
+          {!hideLibraryStatusFilter && (
+          <>
+            <div className="border-t border-prestij-border-primary"></div>
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Kütüphane Durumu</h3>
+              {/* ... Kütüphane Durumu radio butonları burada ... */}
+            </div>
+          </>
+        )}
+
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Kütüphane Durumu</h3>
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <input type="radio" id="lib-all" name="libStatus"
+                  checked={localFilters.libraryStatus === 'all'}
+                  onChange={() => handleLibraryStatusChange('all')}
+                  className="h-4 w-4 bg-prestij-bg-input border-prestij-border-secondary text-prestij-purple focus:ring-prestij-purple"
+                />
+                <label htmlFor="lib-all" className="ml-3 text-prestij-text-secondary">Tümü</label>
+              </div>
+              <div className="flex items-center">
+                <input type="radio" id="lib-in" name="libStatus"
+                  checked={localFilters.libraryStatus === 'in'}
+                  onChange={() => handleLibraryStatusChange('in')}
+                  className="h-4 w-4 bg-prestij-bg-input border-prestij-border-secondary text-prestij-purple focus:ring-prestij-purple"
+                />
+                <label htmlFor="lib-in" className="ml-3 text-prestij-text-secondary">Kütüphanedekiler</label>
+              </div>
+              <div className="flex items-center">
+                <input type="radio" id="lib-not-in" name="libStatus"
+                  checked={localFilters.libraryStatus === 'not_in'}
+                  onChange={() => handleLibraryStatusChange('not_in')}
+                  className="h-4 w-4 bg-prestij-bg-input border-prestij-border-secondary text-prestij-purple focus:ring-prestij-purple"
+                />
+                <label htmlFor="lib-not-in" className="ml-3 text-prestij-text-secondary">Kütüphanede Olmayanlar</label>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="absolute bottom-6 left-6 right-6">
+        <div className="absolute bottom-0 left-0 right-0 p-6 bg-prestij-bg-dark-1 border-t border-prestij-border-primary">
           <button 
             onClick={handleApply}
             className="w-full py-3 bg-prestij-purple rounded-lg font-bold hover:bg-prestij-purple-darker transition-colors"

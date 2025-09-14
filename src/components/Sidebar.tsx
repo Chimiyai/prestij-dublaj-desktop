@@ -28,6 +28,7 @@ export default function Sidebar() {
       <nav className="flex flex-col space-y-2">
         <NavLink 
           to="/discover" 
+          end
           className="flex items-center space-x-3 px-4 py-3 rounded-lg text-prestij-text-secondary hover:bg-prestij-bg-button transition-colors"
           style={({ isActive }) => isActive ? activeLinkStyle : undefined}
         >
@@ -35,7 +36,7 @@ export default function Sidebar() {
           <span>Keşfet</span>
         </NavLink>
         <NavLink 
-          to="/library" 
+          to="/library"
           className="flex items-center space-x-3 px-4 py-3 rounded-lg text-prestij-text-secondary hover:bg-prestij-bg-button transition-colors"
           style={({ isActive }) => isActive ? activeLinkStyle : undefined}
         >

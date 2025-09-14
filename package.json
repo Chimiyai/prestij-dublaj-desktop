@@ -26,15 +26,20 @@
   "dependencies": {
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/typography": "github:tailwindcss/typography",
+    "adm-zip": "^0.5.16",
     "aspect-ratio": "^2.1.7",
     "axios": "^1.12.1",
+    "date-fns": "^4.1.0",
+    "electron-dl": "^4.0.0",
     "electron-store": "^10.1.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.544.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.9.1",
-    "tailwindcss-textshadow": "^2.1.3"
+    "tailwindcss-textshadow": "^2.1.3",
+    "winreg": "^1.2.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
