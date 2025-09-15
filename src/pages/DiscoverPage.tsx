@@ -1,128 +1,113 @@
 // src/pages/DiscoverPage.tsx
-import { useEffect, useState, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Filter, Search } from 'lucide-react'; // Search ikonunu import et
+import { useEffect, useState } from 'react';
 import api from '../lib/api';
 import type { Project } from '../types';
 import ProjectCard from '../components/ProjectCard';
-import FilterSidebar, { type Filters } from '../components/FilterSidebar';
-import { useDebounce } from '../hooks/useDebounce'; // Yeni hook'umuzu import et
+import FeaturedProjectCard from '../components/FeaturedProjectCard'; // Bu importun doğru olduğundan emin ol
+
+// Swiper bileşenlerini ve stillerini import et
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination, Autoplay } from 'swiper/modules';
+// TypeScript'e bu satırları görmezden gelmesini söylüyoruz.
+// @ts-expect-error: Swiper CSS modules do not have TypeScript definitions
+import 'swiper/css';
+// @ts-expect-error: Swiper navigation CSS does not have TypeScript definitions
+import 'swiper/css/navigation';
+// @ts-expect-error: Swiper pagination CSS does not have TypeScript definitions
+import 'swiper/css/pagination';
+// @ts-expect-error: Swiper autoplay CSS does not have TypeScript definitions
+import 'swiper/css/autoplay';
 
 export default function DiscoverPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
+  const [popularProjects, setPopularProjects] = useState<Project[]>([]);
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
+  
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  
-  const [searchParams] = useSearchParams();
-  const initialView = searchParams.get('view');
-
-  const [activeFilters, setActiveFilters] = useState<Filters>({
-    categories: [],
-    price: 'all',
-    libraryStatus: initialView === 'library' ? 'in' : 'all',
-  });
-  
-  // Arama metni için yeni state
-  const [searchTerm, setSearchTerm] = useState('');
-  // Gecikmeli arama değeri
-  const debouncedSearchTerm = useDebounce(searchTerm, 300); // Kullanıcı yazmayı bıraktıktan 300ms sonra güncellenir
-
-  const fetchProjects = useCallback(async (filters: Filters, search: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams();
-      if (filters.categories.length > 0) {
-                params.append('category', filters.categories[0]);
-            }
-            if (filters.price !== 'all') {
-                params.append('price', filters.price);
-            }
-            if (filters.libraryStatus !== 'all') {
-                params.append('libraryStatus', filters.libraryStatus);
-            }
-        if (search) {
-        params.append('title_contains', search);
-      }
-      
-      const response = await api.get(`/projects?${params.toString()}`);
-      setProjects(response.data);
-    } catch (err) {
-      console.error("Projeler çekilirken hata:", err);
-      setError("Projeler yüklenirken bir sorun oluştu.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
-    fetchProjects(activeFilters, debouncedSearchTerm);
-  }, [activeFilters, debouncedSearchTerm, fetchProjects]);
+    const fetchDiscoverData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const featuredPromise = api.get('/projects?sortBy=popular&limit=5');
+        const popularPromise = api.get('/projects?sortBy=popular&limit=10');
+        const allPromise = api.get('/projects');
 
-  const handleApplyFilters = (newFilters: Filters) => {
-    setActiveFilters(newFilters);
-    setIsFilterOpen(false);
-  };
-  
-  const renderContent = () => {
-    if (isLoading) {
-      return <p className="text-center mt-16 text-prestij-text-muted">Projeler Yükleniyor...</p>;
-    }
-  
-    if (error) {
-      return <p className="text-center mt-16 text-red-400">{error}</p>;
-    }
-  
-    if (projects.length === 0) {
-      return <p className="text-center mt-16 text-prestij-text-muted">Seçilen filtrelere uygun proje bulunamadı.</p>;
-    }
-  
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-        {projects.map((project) => (
-          <ProjectCard key={project.id} project={project} />
-        ))}
-      </div>
-    );
+        const [featuredResponse, popularResponse, allResponse] = await Promise.all([
+          featuredPromise,
+          popularPromise,
+          allPromise,
+        ]);
+
+        setFeaturedProjects(featuredResponse.data);
+        setPopularProjects(popularResponse.data);
+        setAllProjects(allResponse.data);
+
+      } catch { // Kullanılmayan değişken uyarısını çöz
+        setError("Veriler yüklenirken bir sorun oluştu.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchDiscoverData();
+  }, []);
+
+  if (isLoading) {
+    return <div className="text-center p-10 text-white">Keşfet Sayfası Yükleniyor...</div>;
+  }
+  if (error) {
+    return <div className="text-center p-10 text-red-400">{error}</div>;
   }
 
   return (
-    <>
-      <div className="p-8">
-        <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8">
-          <h1 className="text-4xl font-bold">Keşfet Dünyası</h1>
-          
-          {/* YENİ ARAMA ÇUBUĞU VE FİLTRE BUTONU GRUBU */}
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-prestij-text-placeholder" />
-              <input
-                type="text"
-                placeholder="Proje ara..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-48 sm:w-64 bg-prestij-bg-dark-2 border border-prestij-border-primary rounded-md pl-10 pr-4 py-2 text-prestij-text-primary focus:outline-none focus:ring-2 focus:ring-prestij-purple"
-              />
-            </div>
-            <button 
-              onClick={() => setIsFilterOpen(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-prestij-bg-button rounded-md hover:bg-prestij-purple/80 transition-colors"
-            >
-              <Filter size={20} />
-            </button>
-          </div>
-        </header>
+    <div className="p-8 h-full overflow-y-auto">
+      <header className="flex justify-between items-center mb-8">
+        <h1 className="text-4xl font-bold">Keşfet</h1>
+        {/* TODO: Arama ve Filtre butonu buraya yeniden eklenecek */}
+      </header>
 
-        {renderContent()}
-      </div>
+      {/* 1. BÖLÜM: Öne Çıkanlar Slider'ı */}
+      <section className="mb-12 h-[50vh] min-h-[400px]">
+        <Swiper
+          modules={[Pagination, Autoplay]}
+          spaceBetween={30}
+          slidesPerView={1}
+          pagination={{ clickable: true }}
+          loop={true}
+          autoplay={{ delay: 5000, disableOnInteraction: false }}
+          className="h-full w-full rounded-2xl"
+        >
+          {featuredProjects.map(project => (
+            <SwiperSlide key={project.id}>
+              <FeaturedProjectCard project={project} />
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </section>
       
-      <FilterSidebar 
-        isOpen={isFilterOpen} 
-        onClose={() => setIsFilterOpen(false)}
-        currentFilters={activeFilters}
-        onApplyFilters={handleApplyFilters} 
-      />
-    </>
+      {/* 2. BÖLÜM: Popüler Projeler (Yatay Scroll) */}
+      <section className="mb-12">
+        <h2 className="text-2xl font-bold mb-4">Popüler Projeler</h2>
+        <div className="flex space-x-6 overflow-x-auto pb-4 -mx-8 px-8 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+            {popularProjects.map(project => (
+                <div key={project.id} className="w-48 flex-shrink-0">
+                    <ProjectCard project={project}/>
+                </div>
+            ))}
+        </div>
+      </section>
+
+      {/* 3. BÖLÜM: Tüm Projeler */}
+      <section>
+        <h2 className="text-2xl font-bold mb-4">Tüm Projeler</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          {allProjects.map((project) => (
+            <ProjectCard key={project.id} project={project} />
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }

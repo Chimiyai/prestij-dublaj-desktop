@@ -1,15 +1,15 @@
 // src/types/index.ts
 
-// Bu zaten vardı
 export interface Project {
   id: number;
   title: string;
   slug: string;
   description: string | null;
   coverImagePublicId: string | null;
+  bannerImagePublicId: string | null;
   type: string;
   releaseDate: string | null;
-  price?: number | null; // <-- BU SATIRI EKLE
+  price?: number | null;
 }
 
 // --- YENİ EKLENEN TİPLER ---

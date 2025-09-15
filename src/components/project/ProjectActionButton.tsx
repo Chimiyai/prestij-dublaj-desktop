@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import type { IpcRendererEvent } from 'electron';
 import type { ProjectDataForDetail } from '../../types';
-import { Download, ShoppingCart, CheckCircle, AlertTriangle, Play } from 'lucide-react';
+import { Download, Library, ShoppingCart, CheckCircle, AlertTriangle, Play, Link2Off } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { updateQuickLaunchList } from '../../lib/quickLaunch';
 
@@ -101,6 +101,18 @@ export default function ProjectActionButton({ project, userHasGame }: ProjectAct
       <button onClick={handleLaunchGame} className="flex items-center gap-3 px-8 py-4 bg-teal-500 text-white font-bold rounded-lg hover:bg-teal-600 transition-all transform hover:scale-105">
         <Play size={24} />
         OYUNU BAŞLAT
+      </button>
+    );
+  }
+
+  if (!project.externalWatchUrl) {
+    return (
+      <button 
+        disabled={true}
+        className="flex items-center gap-3 px-8 py-4 bg-gray-700 text-gray-400 font-bold rounded-lg cursor-not-allowed"
+      >
+        <Link2Off size={24} />
+        Link Bekleniyor
       </button>
     );
   }
