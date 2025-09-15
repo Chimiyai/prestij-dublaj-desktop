@@ -40,7 +40,9 @@ export interface IModInstaller {
   install: (args: { downloadUrl: string; projectTitle: string; installPath: string }) => Promise<{ success: boolean; error?: string }>;
   selectDirectory: () => Promise<string | null>;
   launchGame: (path: string) => Promise<{ success: boolean; error?: string }>;
+  openPaymentWindow: (html: string) => Promise<{ closed: boolean }>; // YENİ
 }
+
 
 declare global {
   interface Window {

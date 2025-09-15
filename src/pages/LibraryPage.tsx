@@ -40,23 +40,38 @@ export default function LibraryPage() {
   }, []);
 
   const displayedProjects = useMemo(() => {
-    const combined = [...ownedProjects];
+    let combined = [...ownedProjects];
     const ownedIds = new Set(ownedProjects.map(p => p.id));
-    freeProjects.forEach(p => { if (!ownedIds.has(p.id)) combined.push(p); });
-
-    return combined.filter(project => {
-      // Fiyat filtresi
-      const priceMatch = activeFilters.price !== 'all'
-        ? (activeFilters.price === 'free' ? project.price == null : project.price != null)
-        : true;
-      
-      // ARAMA FİLTRESİ
-      const searchMatch = searchTerm.trim() === ''
-        ? true
-        : project.title.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      return priceMatch && searchMatch;
+    freeProjects.forEach(p => {
+      if (!ownedIds.has(p.id)) combined.push(p);
     });
+
+    // --- ANA DEĞİŞİKLİK BURADA ---
+    return combined.filter(project => {
+      // 1. Kategori Filtresi
+      const categoryMatch = 
+        !activeFilters.categories || activeFilters.categories.length === 0 
+          ? true // Eğer hiç kategori seçilmemişse, tüm projeler eşleşir
+          : project.categories.some(projectCategory => 
+              activeFilters.categories!.includes(projectCategory.slug)
+            );
+
+      // 2. Fiyat Filtresi
+      const priceMatch = 
+        !activeFilters.price || activeFilters.price === 'all'
+          ? true // Eğer fiyat filtresi 'all' ise, tüm projeler eşleşir
+          : (activeFilters.price === 'free' ? project.price == null : project.price != null);
+      
+      // 3. Arama Filtresi
+      const searchMatch = 
+        !searchTerm || searchTerm.trim() === ''
+          ? true // Eğer arama kutusu boşsa, tüm projeler eşleşir
+          : project.title.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Projenin gösterilmesi için tüm koşulların sağlanması gerekir
+      return categoryMatch && priceMatch && searchMatch;
+    });
+    // --- BİTİŞ ---
   }, [ownedProjects, freeProjects, activeFilters, searchTerm]);
 
   const handleApplyFilters = (newFilters: Filters) => {

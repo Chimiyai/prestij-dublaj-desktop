@@ -2,7 +2,7 @@
   "main": "dist-electron/main.js",
   "name": "prestij-dublaj-desktop",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -54,6 +54,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
+    "@types/adm-zip": "^0.5.7",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",

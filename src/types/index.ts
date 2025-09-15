@@ -1,5 +1,11 @@
 // src/types/index.ts
 
+
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
 export interface Project {
   id: number;
   title: string;
@@ -10,6 +16,7 @@ export interface Project {
   type: string;
   releaseDate: string | null;
   price?: number | null;
+  categories: Category[];
 }
 
 // --- YENİ EKLENEN TİPLER ---

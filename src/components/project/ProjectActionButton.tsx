@@ -2,9 +2,11 @@
 import { useState, useEffect } from 'react';
 import type { IpcRendererEvent } from 'electron';
 import type { ProjectDataForDetail } from '../../types';
-import { Download, Library, ShoppingCart, CheckCircle, AlertTriangle, Play, Link2Off } from 'lucide-react';
+import { Download, ShoppingCart, CheckCircle, AlertTriangle, Play, Link2Off } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { updateQuickLaunchList } from '../../lib/quickLaunch';
+import type { QuickLaunchItem } from '../Sidebar';
+import api from '../../lib/api';
 
 interface ProjectActionButtonProps {
   project: ProjectDataForDetail;
@@ -15,13 +17,14 @@ type InstallationStatus = {
   status: 'idle' | 'downloading' | 'extracting' | 'copying' | 'success' | 'error';
   progress?: number;
   message?: string;
+  receivedBytes?: number; // Eklendi
+  totalBytes?: number; // Eklendi
 }
 
 export default function ProjectActionButton({ project, userHasGame }: ProjectActionButtonProps) {
   const [status, setStatus] = useState<InstallationStatus>({ status: 'idle' });
-  const [isInstalled, setIsInstalled] = useState(false); // YENİ: Kalıcı kurulum durumu
+  const [isInstalled, setIsInstalled] = useState(false);
 
-  // Bileşen yüklendiğinde ve proje değiştiğinde kurulum durumunu kontrol et
   useEffect(() => {
     window.electronStore.get(`installStatus_${project.slug}`).then(installedStatus => {
       setIsInstalled(installedStatus === 'installed');
@@ -36,13 +39,25 @@ export default function ProjectActionButton({ project, userHasGame }: ProjectAct
         window.electronStore.set(`installStatus_${project.slug}`, 'installed');
         setIsInstalled(true);
         
-        // --- BU BÖLÜMÜN TAMAMINI SİLİYORUZ ---
-        // const addToQuickLaunch = async () => { ... };
-        // addToQuickLaunch();
-        // --- BİTİŞ ---
-
+        const addToQuickLaunch = async () => {
+          const installPath = await window.electronStore.get(`installPath_${project.slug}`);
+          if (typeof installPath === 'string' && installPath) {
+            const newItem: QuickLaunchItem = {
+              slug: project.slug,
+              title: project.title,
+              coverImagePublicId: project.coverImagePublicId,
+              installPath: installPath,
+            };
+            await updateQuickLaunchList(newItem);
+          }
+        };
+        addToQuickLaunch();
+        
         toast.dismiss();
-        toast.success(newStatus.message || 'Başılı!');
+        toast.success(newStatus.message || 'Başarıyla kuruldu!');
+      } else if (newStatus.status === 'error') {
+        toast.dismiss();
+        toast.error(newStatus.message || 'Bir hata oluştu.');
       }
     };
     
@@ -50,15 +65,14 @@ export default function ProjectActionButton({ project, userHasGame }: ProjectAct
     return () => {
       window.ipcRenderer.removeListener('installation-status', listener as (...args: unknown[]) => void);
     };
-  }, [project.slug]);
+  }, [project.slug, project.title, project.coverImagePublicId]);
 
   const handleLaunchGame = async () => {
-    const installPath = await window.electronStore.get(`installPath_${project.slug}`);
-    if (typeof installPath !== 'string' || !installPath) {
+    const installPath = await window.electronStore.get(`installPath_${project.slug}`) as string | null;
+    if (!installPath) {
       toast.error("Oyun yolu bulunamadı. Lütfen ayarlardan kontrol edin.");
       return;
     }
-    // main process'e oyunu başlatma komutu gönder
     window.modInstaller.launchGame(installPath); 
     updateQuickLaunchList({
       slug: project.slug,
@@ -75,20 +89,25 @@ export default function ProjectActionButton({ project, userHasGame }: ProjectAct
       return;
     }
 
-    // YENİ: Kurulumdan önce kayıtlı yolu kontrol et
-    const installPath = await window.electronStore.get(`installPath_${project.slug}`);
-    
-    // --- SORUNUN KAYNAĞI BURASI ---
-    if (typeof installPath !== 'string' || installPath.trim() === '') {
-      toast.error('Lütfen önce sağ üstteki ayarlar menüsünden oyunun kurulum yolunu belirtin.');
-      return; // <-- FONKSİYON BURADA DURUYOR!
+    let installPath = await window.electronStore.get(`installPath_${project.slug}`) as string | null;
+
+    if (!installPath) {
+      toast.loading('Lütfen oyunun kurulum dosyasını (.exe) seçin...', { duration: 8000 });
+      const selectedPath = await window.modInstaller.selectDirectory();
+      toast.dismiss();
+
+      if (selectedPath) {
+        await window.electronStore.set(`installPath_${project.slug}`, selectedPath);
+        installPath = selectedPath;
+      } else {
+        toast.error('Kurulum yolu seçilmedi, işlem iptal edildi.');
+        return;
+      }
     }
-    // --- BİTİŞ ---
 
     setStatus({ status: 'downloading', message: 'Başlatılıyor...' });
     toast.loading('Kurulum başlıyor...');
     
-    // Kod bu satıra hiç ulaşamıyor
     await window.modInstaller.install({
       downloadUrl,
       projectTitle: project.title,
@@ -107,61 +126,110 @@ export default function ProjectActionButton({ project, userHasGame }: ProjectAct
 
   if (!project.externalWatchUrl) {
     return (
-      <button 
-        disabled={true}
-        className="flex items-center gap-3 px-8 py-4 bg-gray-700 text-gray-400 font-bold rounded-lg cursor-not-allowed"
-      >
+      <button disabled={true} className="flex items-center gap-3 px-8 py-4 bg-gray-700 text-gray-400 font-bold rounded-lg cursor-not-allowed">
         <Link2Off size={24} />
         Link Bekleniyor
       </button>
     );
   }
 
-  const handlePurchase = () => {
-    toast.error('Masaüstü uygulamasından satın alma henüz aktif değil. Lütfen web sitemizi ziyaret edin.');
+  const handlePurchase = async () => {
+    setStatus({ status: 'copying', message: 'Yönlendiriliyor...' }); // Butonu geçici olarak pasif hale getirelim
+    toast.loading('Ödeme sayfasına yönlendiriliyorsunuz...');
+
+    try {
+      // 1. Sunucudan ödeme HTML'ini al
+      const response = await api.post('/payment/create-session/shopier', {
+        projectId: project.id,
+      });
+      const { paymentHTML } = response.data;
+
+      if (!paymentHTML) {
+        throw new Error('Ödeme formu alınamadı.');
+      }
+      
+      toast.dismiss();
+
+      // 2. Main process'e, bu HTML'i yeni bir pencerede açması için komut gönder
+      const result = await window.modInstaller.openPaymentWindow(paymentHTML);
+
+      // 3. Kullanıcı pencereyi kapattığında
+      if (result.closed) {
+        // Sayfanın yeniden yüklenmesini tetiklemek için bir olay yayınla
+        // veya ProjectDetailPage'e bir fonksiyon prop'u geçerek yeniden veri çekmesini sağla.
+        // En basit yöntem, kullanıcıya bir bildirim göstermektir.
+        toast('Ödeme penceresi kapatıldı. Satın alım durumunuzu kontrol etmek için sayfayı yenileyebilirsiniz.', { icon: 'ℹ️' });
+        // TODO: Proje detay sayfasını otomatik yenilemek için bir mekanizma kurulabilir.
+      }
+
+    } catch (error: any) {
+      toast.dismiss();
+      toast.error(error.response?.data?.message || 'Ödeme işlemi başlatılamadı.');
+    } finally {
+      setStatus({ status: 'idle' });
+    }
   };
 
   const isLoading = ['downloading', 'extracting', 'copying'].includes(status.status);
   const isPaidGame = typeof project.price === 'number' && project.price > 0;
   
-  // 1. Ücretli ve Kullanıcı Sahip
-  if (isPaidGame && userHasGame) {
-    return (
-      <button onClick={handleInstallMod} disabled={isLoading || status.status === 'success'} className="flex items-center gap-3 px-8 py-4 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-all transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:scale-100">
-        {status.status === 'downloading' && <><Download size={24} /> {`İndiriliyor... ${status.progress?.toFixed(0) || 0}%`}</>}
-        {status.status === 'extracting' && <><Download size={24} /> Ayıklanıyor...</>}
-        {status.status === 'copying' && <><Download size={24} /> Kopyalanıyor...</>}
-        {status.status === 'success' && <><CheckCircle size={24} /> Başarıyla Kuruldu</>}
-        {status.status === 'error' && <><AlertTriangle size={24} /> Tekrar Dene</>}
-        {status.status === 'idle' && <><Download size={24} /> ŞİMDİ KUR</>}
-      </button>
-    );
+  const renderButtonIcon = () => {
+    switch (status.status) {
+        case 'downloading': return <Download size={24} className="animate-pulse" />;
+        case 'extracting': return <Download size={24} className="animate-pulse" />;
+        case 'copying': return <Download size={24} className="animate-pulse" />;
+        case 'success': return <CheckCircle size={24} />;
+        case 'error': return <AlertTriangle size={24} />;
+        default:
+            if (isPaidGame && !userHasGame) return <ShoppingCart size={24} />;
+            return <Download size={24} />;
+    }
   }
 
-  // 2. Ücretli ve Kullanıcı Sahip Değil
-  if (isPaidGame && !userHasGame) {
-    return (
-      <button onClick={handlePurchase} className="flex items-center gap-3 px-8 py-4 bg-prestij-purple text-white font-bold rounded-lg hover:bg-prestij-purple-darker transition-all transform hover:scale-105">
-        <ShoppingCart size={24} />
-        {`${project.price?.toFixed(2)} ${project.currency || 'TRY'} - SATIN AL`}
-      </button>
-    );
-  }
+  const renderButtonText = () => {
+    switch (status.status) {
+      case 'downloading':
+        if (status.totalBytes && status.totalBytes > 0) return `İndiriliyor... ${status.progress?.toFixed(0) || 0}%`;
+        if (status.receivedBytes) return `İndiriliyor... (${(status.receivedBytes / 1024 / 1024).toFixed(1)} MB)`;
+        return 'İndiriliyor...';
+      case 'extracting': return 'Ayıklanıyor...';
+      case 'copying': return 'Kopyalanıyor...';
+      case 'success': return 'Başarıyla Kuruldu';
+      case 'error': return 'Tekrar Dene';
+      default:
+        if (isPaidGame && userHasGame) return 'ŞİMDİ KUR';
+        if (isPaidGame && !userHasGame) return `${project.price?.toFixed(2)} ${project.currency || 'TRY'} - SATIN AL`;
+        if (!isPaidGame) return 'ÜCRETSİZ KUR';
+        return 'Hata';
+    }
+  };
 
-  // 3. Ücretsiz
-  if (!isPaidGame) {
+  // Tüm butonları tek bir yerde toplayalım
+  if (isPaidGame) {
+    if (userHasGame) {
+      // Ücretli & Sahip
+      return (
+        <button onClick={handleInstallMod} disabled={isLoading || status.status === 'success'} className="flex items-center gap-3 px-8 py-4 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-all transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:scale-100">
+          {renderButtonIcon()}
+          {renderButtonText()}
+        </button>
+      );
+    } else {
+      // Ücretli & Sahip Değil
+      return (
+        <button onClick={handlePurchase} className="flex items-center gap-3 px-8 py-4 bg-prestij-purple text-white font-bold rounded-lg hover:bg-prestij-purple-darker transition-all transform hover:scale-105">
+          {renderButtonIcon()}
+          {renderButtonText()}
+        </button>
+      );
+    }
+  } else {
+    // Ücretsiz
     return (
-      // Butonun onClick'i artık doğrudan handleInstallMod'u çağırıyor.
       <button onClick={handleInstallMod} disabled={isLoading || status.status === 'success'} className="flex items-center gap-3 px-8 py-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-all transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:scale-100">
-        {status.status === 'downloading' && <><Download size={24} /> {`İndiriliyor... ${status.progress?.toFixed(0) || 0}%`}</>}
-        {status.status === 'extracting' && <><Download size={24} /> Ayıklanıyor...</>}
-        {status.status === 'copying' && <><Download size={24} /> Kopyalanıyor...</>}
-        {status.status === 'success' && <><CheckCircle size={24} /> Başarıyla Kuruldu</>}
-        {status.status === 'error' && <><AlertTriangle size={24} /> Tekrar Dene</>}
-        {status.status === 'idle' && <><Download size={24} /> ÜCRETSİZ KUR</>}
+        {renderButtonIcon()}
+        {renderButtonText()}
       </button>
     );
   }
-
-  return null;
 }
