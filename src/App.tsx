@@ -1,41 +1,84 @@
 // src/App.tsx
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import type { IpcRendererEvent } from 'electron';
+
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
 import MainLayout from './components/MainLayout';
-import LibraryPage from './pages/LibraryPage'; // Geri ekle
+import LibraryPage from './pages/LibraryPage';
 import DiscoverPage from './pages/DiscoverPage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import UpdateNotification from './components/UpdateNotification';
 
-// Bu, giriş yapmış kullanıcıları koruyan bir sarmalayıcı bileşen
-function ProtectedRoutes() {
+// --- Bileşenler ---
+
+// Bu bileşen, protokol dinleyicisini ve korumalı rotaları yönetir.
+function AppRoutes() {
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <MainLayout /> : <Navigate to="/login" />;
+
+  useEffect(() => {
+    // HATA 1 ÇÖZÜMÜ: Gelen argümanı güvenli bir şekilde cast et
+    const handleProtocolAction = (
+      _event: IpcRendererEvent, 
+      ...args: unknown[]
+    ) => {
+      const action = args[0] as { command: string; slug: string }; // Tip güvencesi
+      
+      console.log('Protokol eylemi alındı:', action);
+      if (action.command === 'install' || action.command === 'launch') {
+        navigate(`/project/${action.slug}`, { 
+          state: { autoInstall: true }
+        });
+      }
+    };
+    window.ipcRenderer.on('protocol-action', handleProtocolAction);
+    return () => {
+      window.ipcRenderer.removeListener('protocol-action', handleProtocolAction as (...args: unknown[]) => void);
+    };
+  }, [navigate]);
+
+  if (!isAuthenticated) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        {/* Giriş yapmamış kullanıcı başka bir sayfaya gitmeye çalışırsa login'e yönlendir */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
+  return (
+    <MainLayout>
+      <Routes>
+        <Route path="/" element={<Navigate to="/discover" replace />} />
+        <Route path="/library" element={<LibraryPage />} />
+        <Route path="/discover" element={<DiscoverPage />} />
+        <Route path="/project/:slug" element={<ProjectDetailPage />} />
+        {/* Giriş yapmış kullanıcı login sayfasına gitmeye çalışırsa ana sayfaya yönlendir */}
+        <Route path="/login" element={<Navigate to="/" replace />} />
+      </Routes>
+    </MainLayout>
+  );
 }
 
-function App() {
+
+// Ana App bileşeni
+export default function App() {
   const { isLoading } = useAuth();
 
+  // Oturum durumu kontrol edilirken boş bir ekran göster
   if (isLoading) {
     return <div className="flex items-center justify-center h-screen bg-site-bg-main"></div>;
   }
 
   return (
-    <HashRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route element={<ProtectedRoutes />}>
-          <Route path="/" element={<Navigate to="/discover" />} />
-          <Route path="/library" element={<LibraryPage />} /> {/* ARTIK AYRI BİR ROTA */}
-          <Route path="/discover" element={<DiscoverPage />} />
-          <Route path="/project/:slug" element={<ProjectDetailPage />} />
-        </Route>
-      </Routes>
+    <>
+      <HashRouter>
+        <AppRoutes />
+      </HashRouter>
       <UpdateNotification />
-    </HashRouter>
+    </>
   );
 }
-
-
-export default App;

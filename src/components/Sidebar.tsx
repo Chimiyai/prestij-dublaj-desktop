@@ -7,6 +7,7 @@ import { Menu, Transition } from '@headlessui/react';
 import { getCloudinaryImageUrl } from '../lib/cloudinary'; // Resimler için yardımcıyı import et
 import toast from 'react-hot-toast';
 import { updateQuickLaunchList } from '../lib/quickLaunch';
+import logoUrl from '/logo.png';
 
 // Hızlı Başlatma öğesinin tipini tanımlayalım
 export interface QuickLaunchItem {
@@ -84,7 +85,8 @@ export default function Sidebar() {
     <aside className="w-64 bg-prestij-bg-dark-2 flex flex-col p-4 border-r border-prestij-border-primary">
       {/* 1. Logo Bölümü */}
       <div className="h-20 flex-shrink-0 flex items-center justify-center mb-4">
-        <img src="/logo.png" alt="PrestiJ Studio Logo" className="h-32 w-auto" />
+        {/* DEĞİŞİKLİK BURADA: src="/logo.png" -> src={logoUrl} */}
+        <img src={logoUrl} alt="PrestiJ Dublaj Logo" className="h-12 w-auto" />
       </div>
 
       {/* 2. Navigasyon (Ortalanmış) */}

@@ -2,7 +2,7 @@
   "main": "dist-electron/main.js",
   "name": "prestij-dublaj-desktop",
   "private": true,
-  "version": "1.0.4",
+  "version": "1.0.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,6 +12,7 @@
   "build": {
     "appId": "com.prestijstudio.desktop",
     "productName": "PrestiJStudio",
+    "icon": "build/icon.ico",
     "publish": [
       {
         "provider": "github",
@@ -20,7 +21,8 @@
       }
     ],
     "directories": {
-      "output": "dist-builder"
+      "output": "dist-builder",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",
@@ -28,6 +30,7 @@
     ],
     "win": {
       "target": "nsis",
+      "icon": "build/icon.ico",
       "artifactName": "${productName}-Setup-${version}.${ext}"
     }
   },

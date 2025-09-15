@@ -1,8 +1,7 @@
 // src/pages/ProjectDetailPage.tsx
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../lib/api';
-// YENİ: SVG ikonu için import
 import type { ProjectDataForDetail, UserInteractionData } from '../types';
 import { getCloudinaryImageUrl } from '../lib/cloudinary';
 import { format } from 'date-fns';
@@ -10,8 +9,9 @@ import { tr } from 'date-fns/locale';
 import ProjectActionButton from '../components/project/ProjectActionButton';
 import ProjectInteractionButtons from '../components/project/ProjectInteractionButtons';
 import ProjectTabs from '../components/project/ProjectTabs';
-import { ArrowLeft, Image as ImageIcon, Settings } from 'lucide-react'; // Settings ikonunu ekle
-import SettingsModal from '../components/project/SettingsModal'; // Yeni modalı import et
+import { ArrowLeft, Image as ImageIcon, Settings } from 'lucide-react';
+import SettingsModal from '../components/project/SettingsModal';
+import toast from 'react-hot-toast'; // toast'ı import et
 
 interface ProjectDetailResponse {
   projectDetails: ProjectDataForDetail;
@@ -24,14 +24,19 @@ interface ProjectDetailResponse {
 export default function ProjectDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-
+  const location = useLocation(); // Yönlendirme ile gelen state'i okumak için
+  
   const [data, setData] = useState<ProjectDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
+  // Otomatik kurulumun birden fazla kez tetiklenmesini engellemek için bir referans
+  const autoInstallTriggered = useRef(false);
 
   useEffect(() => {
-    if (!slug) return;
+    // Sayfaya her girildiğinde veya slug değiştiğinde, tetikleyiciyi sıfırla
+    autoInstallTriggered.current = false;
     
     const fetchProject = async () => {
       setLoading(true);
@@ -40,14 +45,63 @@ export default function ProjectDetailPage() {
         const response = await api.get(`/projects/${slug}`);
         setData(response.data);
       } catch (err) {
-        console.error("Proje detayı çekilirken hata:", err);
-        setError("Proje yüklenirken bir sorun oluştu veya proje bulunamadı.");
+        setError("Proje yüklenirken bir sorun oluştu.");
       } finally {
         setLoading(false);
       }
     };
     fetchProject();
   }, [slug]);
+
+
+  // --- YENİ BÖLÜM: Otomatik Kurulumu Tetikleme ---
+  useEffect(() => {
+    // Veri henüz yüklenmediyse, state boşsa veya tetik zaten çalıştıysa bir şey yapma
+    if (loading || !data || autoInstallTriggered.current) return;
+
+    const autoInstallRequest = location.state?.autoInstall;
+
+    if (autoInstallRequest) {
+      // Bu fonksiyonu sadece bir kez çalıştır
+      autoInstallTriggered.current = true;
+      
+      // ProjectActionButton'daki handleInstallMod mantığının aynısını burada çalıştır
+      const handleAutoInstall = async () => {
+        const { projectDetails } = data;
+        const downloadUrl = projectDetails.externalWatchUrl;
+        if (!downloadUrl) return;
+
+        let installPath = await window.electronStore.get(`installPath_${projectDetails.slug}`) as string | null;
+        if (!installPath) {
+          toast.loading('Lütfen oyunun kurulum dosyasını (.exe) seçin...', { duration: 8000 });
+          const selectedPath = await window.modInstaller.selectDirectory();
+          toast.dismiss();
+
+          if (selectedPath) {
+            await window.electronStore.set(`installPath_${projectDetails.slug}`, selectedPath);
+            installPath = selectedPath;
+          } else {
+            toast.error('Kurulum yolu seçilmedi, işlem iptal edildi.');
+            return;
+          }
+        }
+        
+        // Bu noktada ProjectActionButton bileşeni zaten arayüzde olduğu için,
+        // onun kendi içindeki "kurulum durumu" güncellemeleri devreye girecektir.
+        // Bizim burada sadece kurulum komutunu göndermemiz yeterli.
+        toast.loading('Kurulum başlıyor...');
+        window.modInstaller.install({
+          downloadUrl,
+          projectTitle: projectDetails.title,
+          installPath: installPath,
+        });
+      };
+      
+      handleAutoInstall();
+    }
+  }, [loading, data, location.state]);
+  // --- BİTİŞ ---
+
 
   if (loading) {
     return <div className="flex items-center justify-center h-full text-white">Yükleniyor...</div>;
@@ -139,15 +193,11 @@ export default function ProjectDetailPage() {
         </div>
       </section>
 
-      {/* GÖREV 5: Açıklama ve Sekmeler (Ayrılmış Yapı) */}
       <section className="container mx-auto px-8 py-12">
-
-        {/* Sekmeler (Artık Sadece Ekip ve Yorumlar İçin) */}
-        <section className="container mx-auto px-8 py-12">
         <ProjectTabs project={projectDetails} />
       </section>
-      </section>
-    <SettingsModal
+
+      <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         projectSlug={projectDetails.slug}
