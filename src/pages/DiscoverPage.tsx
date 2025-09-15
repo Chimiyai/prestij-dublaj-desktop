@@ -91,7 +91,7 @@ export default function DiscoverPage() {
     <>
       <div className="p-8">
         <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8">
-          <h1 className="text-4xl font-bold">Keşfet</h1>
+          <h1 className="text-4xl font-bold">Keşfet Dünyası</h1>
           
           {/* YENİ ARAMA ÇUBUĞU VE FİLTRE BUTONU GRUBU */}
           <div className="flex items-center gap-2">

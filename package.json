@@ -2,7 +2,7 @@
   "main": "dist-electron/main.js",
   "name": "prestij-dublaj-desktop",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,7 +11,7 @@
   },
   "build": {
     "appId": "com.prestijstudio.desktop",
-    "productName": "PrestiJ Dublaj",
+    "productName": "PrestiJStudio",
     "publish": [
       {
         "provider": "github",
@@ -27,7 +27,8 @@
       "dist-electron/**/*"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     }
   },
   "dependencies": {
