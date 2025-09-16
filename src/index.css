@@ -27,6 +27,10 @@
   background-color: #4b5563; /* gray-600 - Biraz daha açık gri */
 }
 
+body {
+  font-family: 'Arial', sans-serif; /* BU TÜR BİR KURAL VARSA SORUN YARATIR */
+}
+
 .react-player {
   position: absolute;
   top: 0;

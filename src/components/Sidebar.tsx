@@ -1,13 +1,14 @@
 // src/components/Sidebar.tsx
 import { useState, useEffect, Fragment } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Compass, Library, User, LogOut, ExternalLink, Play } from 'lucide-react'; // Play ikonunu ekle
+import { Compass, Library, User, LogOut, ExternalLink, Play, UserCircle2 } from 'lucide-react'; // Play ikonunu ekle
 import { useAuth } from '../hooks/useAuth';
 import { Menu, Transition } from '@headlessui/react';
 import { getCloudinaryImageUrl } from '../lib/cloudinary'; // Resimler için yardımcıyı import et
 import toast from 'react-hot-toast';
 import { updateQuickLaunchList } from '../lib/quickLaunch';
 import logoUrl from '/logo.png';
+import { UserCircle} from 'lucide-react';
 
 // Hızlı Başlatma öğesinin tipini tanımlayalım
 export interface QuickLaunchItem {
@@ -70,81 +71,77 @@ export default function Sidebar() {
   backgroundColor: '#8B4EFF',
   color: 'white',
 };
-
-  const handleProfileClick = () => {
-    const profileUrl = `http://localhost:3000/profil/${user?.username}`;
-    window.electronShell.openExternal(profileUrl);
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login'); // Çıkış yaptıktan sonra login sayfasına yönlendir
-  };
-
   return (
-    <aside className="w-20 bg-prestijdublaj-bg-dark-2 flex flex-col p-3 border-prestijdublaj-border-primary">
+    <aside className="w-16 h-full flex flex-col items-center p-3 border-prestij-border-primary">
       {/* 1. Logo Bölümü */}
-      <div className="h-20 flex-shrink-0 flex items-center justify-center mb-4">
-        {/* DEĞİŞİKLİK BURADA: src="/logo.png" -> src={logoUrl} */}
-        <img src={logoUrl} alt="PrestiJ Studio Logo" className="h-22 w-auto" />
+      <div className="flex-shrink-0 mb-8 h-20 w-20"> {/* Boyutu div'e verelim */}
+        {/* DEĞİŞİKLİK BURADA */}
+        <img 
+          src={logoUrl} 
+          alt="PrestiJ Studio Logo" 
+          className="h-full w-full object-contain" // object-contain oranını korur
+        />
       </div>
 
       {/* 2. Navigasyon (Ortalanmış) */}
-      <div className="flex-grow flex flex-col justify-center">
+      <div className="flex-grow flex flex-col justify-center w-full">
         <nav className="flex flex-col items-center space-y-4">
           <NavLink to="/discover" title="Keşfet" end
-          className="flex items-center space-x-3 px-4 py-3 rounded-lg text-prestij-text-secondary hover:bg-prestij-bg-button transition-colors"
-          style={({ isActive }) => isActive ? activeLinkStyle : undefined}
-        >
-          <Compass size={24} />
-            {/* <span>Keşfet</span> YAZIYI SİL */}
+            className="p-3 rounded-lg text-prestij-text-muted hover:bg-prestij-bg-button hover:text-white transition-colors"
+            style={({ isActive }) => isActive ? activeLinkStyle : undefined}
+          >
+            <Compass size={22} />
           </NavLink>
-          <NavLink to="/library" title="Kütüphane" className="flex items-center space-x-3 px-4 py-3 rounded-lg text-prestij-text-secondary hover:bg-prestij-bg-button transition-colors"
-          style={({ isActive }) => isActive ? activeLinkStyle : undefined}>
-            <Library size={24} />
-            {/* <span>Kütüphane</span> YAZIYI SİL */}
+          <NavLink to="/library" title="Kütüphane" 
+            className="p-3 rounded-lg text-prestij-text-muted hover:bg-prestij-bg-button hover:text-white transition-colors"
+            style={({ isActive }) => isActive ? activeLinkStyle : undefined}
+          >
+            <Library size={22} />
           </NavLink>
         </nav>
       </div>
 
-      {/* --- YENİ BÖLÜM: Hızlı Başlatma --- */}
+      {/* 3. BÖLÜM: Hızlı Başlatma */}
       {quickLaunchItems.length > 0 && (
-        <div className="mt-8">
-          <h3 className="px-4 mb-2 text-xs font-semibold text-prestij-text-muted uppercase tracking-wider">
-            Hızlı Başlat
-          </h3>
-          <div className="space-y-1">
-            {quickLaunchItems.map(item => (
+        <div className="flex-shrink-0 my-4 space-y-2">
+          {quickLaunchItems.map(item => (
+            <div key={item.slug} className="group relative">
               <button 
-                key={item.slug} 
                 onClick={() => handleLaunchGame(item)}
-                className="w-full flex items-center gap-3 p-2 rounded-lg text-prestij-text-secondary hover:bg-prestij-bg-button transition-colors group"
-                title={`Başlat: ${item.title}`}
+                className="w-10 h-10 flex items-center justify-center rounded-full overflow-hidden border-2 border-transparent hover:border-prestij-purple transition-colors"
               >
-                <div className="w-8 h-10 flex-shrink-0 rounded-md bg-prestij-bg-dark-1 flex items-center justify-center">
-                  {getCloudinaryImageUrl(item.coverImagePublicId) ? (
-                     <img 
-                        src={getCloudinaryImageUrl(item.coverImagePublicId) || undefined} 
-                        alt={item.title}
-                        className="w-full h-full object-cover rounded-md"
-                      />
-                  ) : <Play size={16} className="text-gray-600"/> }
-                </div>
-                <span className="text-sm font-medium text-left truncate">{item.title}</span>
-                <Play size={16} className="ml-auto text-transparent group-hover:text-white transition-colors" />
+                {getCloudinaryImageUrl(item.coverImagePublicId) ? (
+                   <img 
+                      src={getCloudinaryImageUrl(item.coverImagePublicId) || undefined} 
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                    />
+                ) : <Play size={16} className="text-gray-400"/> }
               </button>
-            ))}
-          </div>
+              {/* --- YENİ: Hızlı Başlat Tooltip --- */}
+              <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-3 py-1.5 bg-prestij-bg-dark-1 text-white text-sm font-semibold rounded-md shadow-lg whitespace-nowrap
+                            opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                {item.title}
+                <div className="absolute left-[-4px] top-1/2 -translate-y-1/2 w-2 h-2 bg-prestij-bg-dark-1 transform rotate-45"></div> {/* Tooltip oku */}
+              </div>
+            </div>
+          ))}
         </div>
       )}
       
-      {/* 3. Profil Menüsü (En Altta) */}
-      <div className="mt-auto pt-4">
-        <div className="border-t border-prestij-border-secondary mb-2"></div>
+      {/* 4. BÖLÜM: Profil Menüsü */}
+      <div className="flex-shrink-0 mt-auto">
         <Menu as="div" className="relative">
-          <Menu.Button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-prestij-text-secondary hover:bg-prestij-bg-button transition-colors">
-            <User size={20} />
-            <span className="flex-grow text-left font-semibold">{user?.username || 'Profil'}</span>
+          <Menu.Button className="w-10 h-10 rounded-full overflow-hidden bg-prestij-bg-dark-1 border-2 border-transparent hover:border-prestij-purple focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-prestij-bg-dark-2 focus:ring-prestij-purple transition-all">
+            {getCloudinaryImageUrl(user?.profileImagePublicId) ? (
+              <img 
+                src={getCloudinaryImageUrl(user?.profileImagePublicId) || undefined}
+                alt="Profil"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <UserCircle2 className="w-full h-full text-gray-500" />
+            )}
           </Menu.Button>
           <Transition
             as={Fragment}
@@ -155,11 +152,24 @@ export default function Sidebar() {
             leaveFrom="transform opacity-100 scale-100"
             leaveTo="transform opacity-0 scale-95"
           >
-            <Menu.Items className="absolute bottom-full left-0 mb-2 w-full origin-bottom-right rounded-md bg-prestij-bg-dark-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-              <div className="py-1">
+            <Menu.Items className="absolute bottom-0 left-full ml-3 w-48 origin-bottom-left rounded-md bg-prestij-bg-dark-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+              <div className="px-1 py-1">
+                <div className="px-3 py-2">
+                  <p className="text-sm font-semibold text-white truncate">{user?.username}</p>
+                  <p className="text-xs text-prestij-text-muted">Profil</p>
+                </div>
+                <div className="h-px bg-prestij-border-primary my-1"></div>
                 <Menu.Item>
                   {({ active }) => (
-                    <button onClick={handleProfileClick} className={`${active ? 'bg-prestij-bg-button text-white' : 'text-prestij-text-secondary'} group flex w-full items-center rounded-md px-4 py-2 text-sm`}>
+                    // --- DEĞİŞİKLİK BURADA ---
+                    <button 
+                      onClick={() => {
+                        console.log("Profili Görüntüle butonuna tıklandı!");
+                        const profileUrl = `http://localhost:3000/profil/${user?.username}`;
+                        window.electronShell.openExternal(profileUrl);
+                      }} 
+                      className={`${active ? 'bg-prestij-bg-button text-white' : 'text-prestij-text-secondary'} group flex w-full items-center rounded-md px-4 py-2 text-sm`}
+                    >
                       <ExternalLink className="mr-2 h-5 w-5" />
                       Profili Görüntüle
                     </button>
@@ -167,7 +177,14 @@ export default function Sidebar() {
                 </Menu.Item>
                 <Menu.Item>
                   {({ active }) => (
-                    <button onClick={handleLogout} className={`${active ? 'bg-red-500/20 text-red-400' : 'text-red-400/80'} group flex w-full items-center rounded-md px-4 py-2 text-sm`}>
+                    <button 
+                      onClick={() => {
+                        console.log("Çıkış Yap butonuna tıklandı!");
+                        logout();
+                        navigate('/login');
+                      }} 
+                      className={`${active ? 'bg-red-500/20 text-red-400' : 'text-red-400/80'} group flex w-full items-center rounded-md px-4 py-2 text-sm`}
+                    >
                       <LogOut className="mr-2 h-5 w-5" />
                       Çıkış Yap
                     </button>

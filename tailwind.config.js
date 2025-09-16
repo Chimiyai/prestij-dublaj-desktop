@@ -1,5 +1,5 @@
-// tailwind.config.js (KAPSAMLI HALİ)
-
+// tailwind.config.js
+import defaultTheme from 'tailwindcss/defaultTheme';
 const { MailWarningIcon } = require('lucide-react');
 const colors = require('tailwindcss/colors');
 const plugin = require('tailwindcss/plugin');
@@ -235,7 +235,7 @@ module.exports = {
         'stat-gradient': 'linear-gradient(to right, #8B4EFF, #5A67D8)',
       },
       fontFamily: {
-        sans: ['Inter', 'var(--font-inter)', 'sans-serif'],
+        sans: ['Inter', ...defaultTheme.fontFamily.sans],
       },
       transitionTimingFunction: {
         'hero-visual-ease': 'cubic-bezier(0.25, 0.1, 0.25, 1)', // Banner için

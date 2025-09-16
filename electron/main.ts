@@ -252,4 +252,12 @@ app.whenReady().then(() => {
     });
   });
 
+  ipcMain.handle('open-external-url', async (_event, url: string) => {
+    if (url && (url.startsWith('http:') || url.startsWith('https:'))) {
+      await shell.openExternal(url);
+      return { success: true };
+    }
+    return { success: false, error: 'Geçersiz veya güvenli olmayan URL.' };
+  });
+
 });

@@ -74,15 +74,19 @@ export default function ProjectDetailTabs({ project, userStatus }: Props) {
     // Ana kapsayıcı, tüm ekranı kaplar
     <div className="h-full w-full flex flex-col">
       {/* 1. BÖLÜM: Sekme Butonları */}
-      <nav className="flex-shrink-0 flex items-center space-x-2 px-8 pt-4 bg-prestij-bg-dark-1">
+      {/* 2. KATMAN: Sekme Butonları (Yüzen Navigasyon) */}
+      <nav className="absolute top-0 left-1/2 -translate-x-1/2 z-30 flex items-center space-x-2 p-2 mt-4 bg-black/30 backdrop-blur-sm rounded-xl border border-white/10">
         <button onClick={() => setActiveTab('download')} className={getTabClassName('download')}>
-          <Download size={16} /> İndir
+          <Download size={16} />
+          <span>İndir</span>
         </button>
         <button onClick={() => setActiveTab('team')} className={getTabClassName('team')}>
-          <Users size={16} /> Katkıda Bulunanlar
+          <Users size={16} />
+          <span>Katkıda Bulunanlar</span>
         </button>
         <button onClick={() => setActiveTab('comments')} className={getTabClassName('comments')}>
-          <MessageSquare size={16} /> Yorumlar
+          <MessageSquare size={16} />
+          <span>Yorumlar</span>
         </button>
       </nav>
 
