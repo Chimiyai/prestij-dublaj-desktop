@@ -82,30 +82,27 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 bg-prestij-bg-dark-2 flex flex-col p-4 border-r border-prestij-border-primary">
+    <aside className="w-20 bg-prestijdublaj-bg-dark-2 flex flex-col p-3 border-prestijdublaj-border-primary">
       {/* 1. Logo Bölümü */}
       <div className="h-20 flex-shrink-0 flex items-center justify-center mb-4">
         {/* DEĞİŞİKLİK BURADA: src="/logo.png" -> src={logoUrl} */}
-        <img src={logoUrl} alt="PrestiJ Dublaj Logo" className="h-12 w-auto" />
+        <img src={logoUrl} alt="PrestiJ Studio Logo" className="h-22 w-auto" />
       </div>
 
       {/* 2. Navigasyon (Ortalanmış) */}
       <div className="flex-grow flex flex-col justify-center">
-        <nav className="flex flex-col space-y-2">
-          <NavLink to="/discover" end
+        <nav className="flex flex-col items-center space-y-4">
+          <NavLink to="/discover" title="Keşfet" end
           className="flex items-center space-x-3 px-4 py-3 rounded-lg text-prestij-text-secondary hover:bg-prestij-bg-button transition-colors"
           style={({ isActive }) => isActive ? activeLinkStyle : undefined}
         >
-          <Compass size={20} />
-          <span>Keşfet</span>
-        </NavLink>
-        <NavLink 
-          to="/library"
-          className="flex items-center space-x-3 px-4 py-3 rounded-lg text-prestij-text-secondary hover:bg-prestij-bg-button transition-colors"
-          style={({ isActive }) => isActive ? activeLinkStyle : undefined}
-        >
-          <Library size={20} />
-          <span>Kütüphane</span>
+          <Compass size={24} />
+            {/* <span>Keşfet</span> YAZIYI SİL */}
+          </NavLink>
+          <NavLink to="/library" title="Kütüphane" className="flex items-center space-x-3 px-4 py-3 rounded-lg text-prestij-text-secondary hover:bg-prestij-bg-button transition-colors"
+          style={({ isActive }) => isActive ? activeLinkStyle : undefined}>
+            <Library size={24} />
+            {/* <span>Kütüphane</span> YAZIYI SİL */}
           </NavLink>
         </nav>
       </div>

@@ -2,7 +2,7 @@
   "main": "dist-electron/main.js",
   "name": "prestij-dublaj-desktop",
   "private": true,
-  "version": "1.0.6",
+  "version": "1.0.8",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -50,7 +50,9 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hot-toast": "^2.6.0",
+    "react-player": "^3.3.2",
     "react-router-dom": "^7.9.1",
+    "react-youtube": "^10.1.0",
     "swiper": "^12.0.1",
     "tailwindcss-textshadow": "^2.1.3",
     "winreg": "^1.2.5"

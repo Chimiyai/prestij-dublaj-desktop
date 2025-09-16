@@ -1,5 +1,5 @@
 // src/pages/DiscoverPage.tsx
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { Filter, Search } from 'lucide-react';
 import api from '../lib/api';
 import type { Project } from '../types';
@@ -122,7 +122,6 @@ export default function DiscoverPage() {
         <section className="mb-12 h-[50vh] min-h-[400px]">
           <Swiper
             modules={[Navigation, Pagination, Autoplay]}
-            navigation
             pagination={{ clickable: true }}
             loop={true}
             autoplay={{ delay: 5000, disableOnInteraction: false }}
@@ -139,13 +138,20 @@ export default function DiscoverPage() {
         {/* 2. BÖLÜM: Popüler Projeler */}
         <section className="mb-12">
           <h2 className="text-2xl font-bold mb-4">Popüler Projeler</h2>
-          <div className="flex space-x-6 overflow-x-auto pb-4 -mx-8 px-8 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
-              {popularProjects.map(project => (
-                  <div key={project.id} className="w-48 flex-shrink-0">
-                      <ProjectCard project={project}/>
-                  </div>
-              ))}
-          </div>
+          <Swiper
+            modules={[Navigation]}
+            spaceBetween={24} // Kartlar arası boşluk
+            slidesPerView={'auto'} // Ekrana sığdığı kadar kart gösterir
+            className="!-mx-8 !px-8" // Kenar boşluklarını sıfırlayıp tekrar iç boşluk ekler
+          >
+            <div className="flex space-x-6 overflow-x-auto pb-4 -mx-8 px-8 custom-scrollbar custom-scrollbar-horizontal">
+            {popularProjects.map(project => (
+              <SwiperSlide key={project.id} className="!w-48"> {/* Kartların genişliğini belirle */}
+                <ProjectCard project={project}/>
+              </SwiperSlide>
+            ))}
+            </div>
+          </Swiper>
         </section>
 
         {/* 3. BÖLÜM: Tüm Projeler (Filtrelenmiş ve Aranmış Sonuçlar) */}

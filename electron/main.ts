@@ -2,29 +2,29 @@
 
 import { app, BrowserWindow, ipcMain, dialog, session, shell } from 'electron';
 import path from 'node:path';
-import fs from 'node:fs/promises';
+import fsPromises from 'node:fs/promises';
+import fs from 'node:fs'; 
+import { pipeline } from 'node:stream';
+import util from 'node:util';
+import axios from 'axios';
 import Store from 'electron-store';
 import { fileURLToPath } from 'node:url';
 import { autoUpdater } from 'electron-updater';
 import AdmZip from 'adm-zip';
 
-// --- HATA ÇÖZÜMÜ: TÜM SABİTLER VE GLOBAL DEĞİŞKENLER EN ÜSTTE TANIMLANMALI ---
-
+// --- Global Değişkenler ve Sabitler ---
 let mainWindow: BrowserWindow | null = null;
 const store = new Store();
 const PROTOCOL = 'prestijdublaj';
-
-// Vite & Electron Yolları
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL'];
 const DIST_PATH = path.join(__dirname, '../dist');
 const PUBLIC_PATH = VITE_DEV_SERVER_URL ? path.join(__dirname, '../public') : DIST_PATH;
-
 let initialUrl: string | undefined = undefined;
+const streamPipeline = util.promisify(pipeline); // stream için
 
-// --- BİTİŞ ---
-
+// --- Fonksiyonlar ---
 function handleProtocolUrl(url: string) {
   if (!mainWindow) {
     initialUrl = url;
@@ -64,8 +64,27 @@ if (!gotTheLock) {
 // --- Pencere Oluşturma Fonksiyonu ---
 function createWindow() {
   mainWindow = new BrowserWindow({
-    icon: path.join(PUBLIC_PATH, 'favicon.ico'), // Artık PUBLIC_PATH'i tanır
+    icon: path.join(PUBLIC_PATH, 'favicon.ico'),
     webPreferences: { preload: path.join(__dirname, 'preload.mjs') },
+    width: 1280,
+    height: 720,
+    minWidth: 940,
+    minHeight: 560,
+  });
+
+  mainWindow.setMenuBarVisibility(false);
+
+  // --- YENİ VE KRİTİK BÖLÜM: İÇERİK GÜVENLİK POLİTİKASI ---
+  // YouTube ve Vimeo gibi harici kaynaklardan 'iframe' yüklemeye izin ver.
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        // "frame-src" direktifi, hangi kaynaklardan iframe yüklenebileceğini belirtir.
+        // "'self'" uygulamanın kendi kaynağından, geri kalanı ise güvendiğimiz dış kaynaklardır.
+        'Content-Security-Policy': [ "frame-src 'self' https://www.youtube.com https://player.vimeo.com" ]
+      }
+    });
   });
 
   mainWindow.on('closed', () => { mainWindow = null; });
@@ -143,65 +162,63 @@ app.whenReady().then(() => {
     if (!canceled && filePaths.length > 0) return path.dirname(filePaths[0]);
     return null;
   });
-  
+
+  // --- YENİ VE BASİTLEŞTİRİLMİŞ 'install-mod' HANDLER'I ---
   ipcMain.handle('install-mod', async (event, { downloadUrl, projectTitle, installPath }) => {
-    if (!mainWindow) return { success: false, message: 'Ana pencere bulunamadı.'};
-    const driveWindow = new BrowserWindow({
-      width: 800,
-      height: 600,
-      parent: mainWindow,
-      modal: true,
-      autoHideMenuBar: true,
-      title: `${projectTitle} için dosyayı indir`,
-      webPreferences: {
-        // Bu pencerenin Node.js'e veya preload script'lerine erişmesine gerek yok, daha güvenli.
-        nodeIntegration: false,
-        contextIsolation: true,
-      }
-    });
-    driveWindow.loadURL(downloadUrl);
-    
-    session.defaultSession.once('will-download', async (_e, item) => {
-      driveWindow.on('close', () => item.cancel());
-      driveWindow.close();
-      
-      const downloadedFilePath = path.join(app.getPath('temp'), item.getFilename());
-      item.setSavePath(downloadedFilePath);
+    const tempDir = app.getPath('temp');
+    const downloadedFilePath = path.join(tempDir, `${projectTitle.replace(/\s/g, '_')}-${Date.now()}.zip`);
 
-      item.on('updated', (_event, state) => {
-        if (state === 'progressing' && item.getTotalBytes() > 0) {
-          const progress = (item.getReceivedBytes() / item.getTotalBytes()) * 100;
-          event.sender.send('installation-status', { status: 'downloading', progress });
-        }
-      });
+    try {
+      event.sender.send('installation-status', { status: 'downloading', progress: 0, message: 'Mod indiriliyor...' });
       
-      item.once('done', async (_event, state) => {
-        if (state === 'completed') {
-          try {
-            event.sender.send('installation-status', { status: 'extracting', message: 'Dosyalar ayıklanıyor...' });
-            const zip = new AdmZip(downloadedFilePath);
-            await fs.mkdir(installPath, { recursive: true });
-            zip.extractAllTo(installPath, true);
-            await fs.unlink(downloadedFilePath);
-            event.sender.send('installation-status', { status: 'success', message: `${projectTitle} başarıyla kuruldu!` });
-          } catch (error) {
-            const msg = error instanceof Error ? error.message : 'Dosya ayıklanamadı.';
-            event.sender.send('installation-status', { status: 'error', message: msg });
-            try { await fs.unlink(downloadedFilePath); } catch {}
-          }
+      const response = await axios({
+        method: 'get',
+        url: downloadUrl,
+        responseType: 'stream',
+      });
+
+      const totalLength = response.headers['content-length'];
+      let downloadedLength = 0;
+      response.data.on('data', (chunk: Buffer) => {
+        downloadedLength += chunk.length;
+        if (totalLength) {
+          const percentage = (downloadedLength / parseInt(totalLength, 10)) * 100;
+          event.sender.send('installation-status', { status: 'downloading', progress: percentage });
         } else {
-          event.sender.send('installation-status', { status: 'error', message: `İndirme başarısız: ${state}` });
+          event.sender.send('installation-status', { status: 'downloading', receivedBytes: downloadedLength });
         }
       });
-    });
+      
+      // DEĞİŞİKLİK BURADA: createWriteStream'i standart 'fs' modülünden çağırıyoruz
+      await streamPipeline(response.data, fs.createWriteStream(downloadedFilePath));
 
-    return { success: true, message: 'İndirme penceresi açıldı.' };
+      event.sender.send('installation-status', { status: 'extracting', message: 'Dosyalar ayıklanıyor...' });
+      
+      const zip = new AdmZip(downloadedFilePath);
+      // DEĞİŞİKLİK BURADA: Promise bazlı fonksiyonları 'fsPromises' üzerinden çağırıyoruz
+      await fsPromises.mkdir(installPath, { recursive: true });
+      zip.extractAllTo(installPath, true);
+      await fsPromises.unlink(downloadedFilePath);
+      
+      event.sender.send('installation-status', { status: 'success', message: `${projectTitle} başarıyla kuruldu!` });
+      return { success: true };
+
+    } catch (error) {
+      console.error('Mod kurulum hatası:', error);
+      // DEĞİŞİKLİK BURADA: Promise bazlı fonksiyonları 'fsPromises' üzerinden çağırıyoruz
+      try { await fsPromises.unlink(downloadedFilePath); } catch {}
+      const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen bir hata oluştu.';
+      event.sender.send('installation-status', { status: 'error', message: errorMessage });
+      return { success: false, error: errorMessage };
+    }
   });
 
+  // launch-game handler'ını da güncelle
   ipcMain.handle('launch-game', async (_event, installPath: string) => {
     try {
       if (!installPath || typeof installPath !== 'string') throw new Error('Geçersiz kurulum yolu.');
-      const files = await fs.readdir(installPath);
+      // DEĞİŞİKLİK BURADA: Promise bazlı fonksiyonları 'fsPromises' üzerinden çağırıyoruz
+      const files = await fsPromises.readdir(installPath);
       const exeFile = files.find(file => file.toLowerCase().endsWith('.exe'));
       if (!exeFile) throw new Error('.exe dosyası bu klasörde bulunamadı.');
       const fullExePath = path.join(installPath, exeFile);

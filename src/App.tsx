@@ -10,6 +10,7 @@ import LibraryPage from './pages/LibraryPage';
 import DiscoverPage from './pages/DiscoverPage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import UpdateNotification from './components/UpdateNotification';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 
 // --- Bileşenler ---
 
@@ -43,6 +44,7 @@ function AppRoutes() {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         {/* Giriş yapmamış kullanıcı başka bir sayfaya gitmeye çalışırsa login'e yönlendir */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

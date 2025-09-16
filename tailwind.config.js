@@ -407,6 +407,7 @@ module.exports = {
         'slider-card-content-overlay': 'linear-gradient(to top, rgb(0, 0, 0) 0%, transparent 100%)', // .slider-card::after (hover'da gelen karartı)
         'gradient-radial': 'radial-gradient(ellipse at center, var(--tw-gradient-stops))',
         'radial-gradient-purple': 'radial-gradient(ellipse at center, rgba(139, 78, 255, 0.15) 0%, transparent 60%)',
+        'video-fade-to-left': 'linear-gradient(to left, transparent 60%, rgba(8, 6, 13, 0.7) 70%, rgba(8, 6, 13, 0.95) 100%)',
       }
   },
   plugins: [

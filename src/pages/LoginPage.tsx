@@ -7,6 +7,7 @@ import type { FormEvent } from 'react';
 // HATA 2 ÇÖZÜMÜ: Axios'un kendi hata tiplerini de import ediyoruz.
 import axios, { isAxiosError } from 'axios';
 import { useAuth } from '../hooks/useAuth';
+import { Link } from 'react-router-dom';
 
 const API_URL = 'http://localhost:3000/api/auth/desktop-login';
 
@@ -87,7 +88,9 @@ export default function LoginPage() {
               <label htmlFor="remember-me" className="ml-2 block text-sm text-prestij-text-secondary">Beni Hatırla</label>
             </div>
             <div className="text-sm">
-              <a href="#" className="font-medium text-prestij-purple-light hover:text-prestij-purple transition">Şifreni mi unuttun?</a>
+              <Link to="/forgot-password" className="font-medium text-prestij-purple-light hover:text-prestij-purple transition">
+                Şifreni mi unuttun?
+              </Link>
             </div>
           </div>
           <div>

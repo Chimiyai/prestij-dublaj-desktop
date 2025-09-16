@@ -11,10 +11,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="flex h-screen w-screen bg-site-bg-main text-prestij-text-primary">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        {/* Outlet yerine, doğrudan children'ı render et */}
-        {children}
-      </main>
+      <main className="flex-1 overflow-y-auto custom-scrollbar">
+  {children}
+</main>
     </div>
   );
 }

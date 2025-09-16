@@ -1,3 +1,48 @@
+/* src/index.css */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+*::-webkit-scrollbar {
+  width: 8px;  /* Dikey çubuklar için genişlik */
+  height: 8px; /* Yatay çubuklar için yükseklik */
+}
+
+/* Kaydırma çubuğunun arka planı (yol) */
+*::-webkit-scrollbar-track {
+  background: transparent; /* Arka planı şeffaf yap */
+}
+
+/* Kaydırma çubuğunun hareket eden kısmı (başparmak) */
+*::-webkit-scrollbar-thumb {
+  background-color: #374151; /* gray-700 - Bizim koyu gri rengimiz */
+  border-radius: 10px; /* Kenarları yuvarlat */
+  border: 2px solid transparent; /* İçeriden boşluk vererek daha ince görünmesini sağlar */
+  background-clip: content-box;
+}
+
+/* Fareyle üzerine gelindiğinde hareket eden kısmın rengi */
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #4b5563; /* gray-600 - Biraz daha açık gri */
+}
+
+.react-player {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* --- YENİ VE DAHA GÜÇLÜ KURALLAR --- */
+.react-player > div, 
+.video-iframe-wrapper,
+.video-iframe-wrapper iframe {
+  /* Bu div'lerin ve iframe'in, ana kapsayıcıya tam olarak uymasını sağlar */
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.video-iframe-wrapper iframe {
+  /* En kritik kural: Videoyu orantılı olarak doldurur ve taşan kısımları gizler */
+  object-fit: cover;
+}

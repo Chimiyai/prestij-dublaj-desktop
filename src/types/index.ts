@@ -71,6 +71,7 @@ export interface ProjectDataForDetail {
         voiceRoles: Array<{ character: { id: number; name: string; } }>;
     }>;
     categories: Array<{ category: { name: string; slug: string } }>;
+    steamAppId?: number | null;
     _count: { comments?: number; ratings?: number };
     volunteerCharacters: ContributionCharacter[];
     currentUserSubmissions?: Array<{ id: number; audioFilePublicId: string; }>;
@@ -92,7 +93,7 @@ export interface CommentUser {
 export interface Comment {
   id: number;
   content: string;
-  createdAt: string; // Tarih string olarak gelecek
+  createdAt: string;
   user: CommentUser;
 }
 
