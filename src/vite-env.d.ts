@@ -12,6 +12,7 @@ export interface IElectronShell {
 interface ImportMetaEnv {
   readonly VITE_CLOUDINARY_CLOUD_NAME: string;
   readonly VITE_GOOGLE_DRIVE_API_KEY: string;
+  readonly VITE_API_BASE_URL: string;
 }
 
 interface ImportMeta {

@@ -165,7 +165,7 @@ export default function Sidebar() {
                     <button 
                       onClick={() => {
                         console.log("Profili Görüntüle butonuna tıklandı!");
-                        const profileUrl = `http://localhost:3000/profil/${user?.username}`;
+                        const profileUrl = `https://prestijstudio.com/profil/${user?.username}`;
                         window.electronShell.openExternal(profileUrl);
                       }} 
                       className={`${active ? 'bg-prestij-bg-button text-white' : 'text-prestij-text-secondary'} group flex w-full items-center rounded-md px-4 py-2 text-sm`}

@@ -1,22 +1,20 @@
 // src/pages/LoginPage.tsx
 
-// HATA 1 ÇÖZÜMÜ: 'FormEvent' tipini 'import type' ile alıyoruz.
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-
-// HATA 2 ÇÖZÜMÜ: Axios'un kendi hata tiplerini de import ediyoruz.
-import axios, { isAxiosError } from 'axios';
+import axios, { isAxiosError } from 'axios'; // axios import'u kalıyor
 import { useAuth } from '../hooks/useAuth';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast'; // Hata gösterimi için toast'ı import edelim
 
-const API_URL = 'http://localhost:3000/api/auth/desktop-login';
+const API_URL = `${import.meta.env.VITE_API_BASE_URL}/auth/desktop-login`;
 
 export default function LoginPage() {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null); // Bu state kalabilir
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -24,25 +22,23 @@ export default function LoginPage() {
     setError(null);
 
     try {
+      // axios.post çağrısı aynı kalıyor, çünkü API_URL artık dinamik
       const response = await axios.post(API_URL, {
         email: email,
         password: password,
       });
 
-      const { token, user } = response.data;
-
-      // === YENİ KISIM ===
-      // Başarılı girişte context'in login fonksiyonunu çağır
-      await login(user, token);
-      // Yönlendirme App.tsx'teki mantık tarafından otomatik olarak yapılacak
+      await login(response.data.user, response.data.token);
       
     } catch (err) {
+      // Hata gösterimini <p> etiketi yerine toast ile yapmak daha tutarlı
       if (isAxiosError(err) && err.response?.data?.message) {
-        // Hatanın bir Axios hatası olduğundan ve içinde mesaj olduğundan emin oluyoruz.
-        setError(err.response.data.message);
+        toast.error(err.response.data.message);
       } else {
-        setError('Giriş yapılırken bir sorun oluştu. Lütfen tekrar deneyin.');
+        toast.error('Giriş yapılırken bir sorun oluştu. Lütfen tekrar deneyin.');
       }
+      // setError'u yine de kullanabiliriz, form içinde göstermek istersek
+      setError((isAxiosError(err) && err.response?.data?.message) || 'Giriş yapılırken bir sorun oluştu.');
     } finally {
       setIsLoading(false);
     }
